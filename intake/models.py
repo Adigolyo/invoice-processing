@@ -125,6 +125,9 @@ class InvoiceExtraction:
     supply_date: str | None = None
     performance_date: str | None = None
     line_items: tuple[LineItem, ...] = ()
+    # The supplier's country as printed (name or ISO 3166 code), the signal
+    # ``determine_origin`` uses (USR-002-02/04/05). ``None`` when not stated.
+    supplier_country: str | None = None
 
     def __post_init__(self) -> None:
         _freeze_tuple(self, "line_items")
