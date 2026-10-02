@@ -1,0 +1,3165 @@
+{
+  "source": "tests/fixtures/tig_pairs (synthetic DEMO documents); classification from TIG_szamla_parok_tablazat.pdf",
+  "notes": [],
+  "pairs": [
+    {
+      "pair": "TIG-2026-09-KEK-A__INV_A-2026-01",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-KEK-A.pdf",
+        "number": "TIG-2026-09-KEK-A",
+        "project": "Kék",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "A Kft.",
+        "contractor_tax_id": "23456789-2-43",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap)",
+            "quantity_raw": "1 200 db",
+            "quantity": "1200",
+            "unit": "db",
+            "unit_price_raw": "60 Ft",
+            "unit_price": "60",
+            "net_raw": "72 000 Ft",
+            "net": "72000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_A-2026-01.pdf",
+        "supplier": "A Kft.",
+        "supplier_tax_id": "23456789-2-43",
+        "supplier_country": "HU",
+        "invoice_number": "INV_A-2026-01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "72 000 Ft",
+        "net": "72000",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "72 000 Ft",
+        "gross": "72000",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap) – Kék projekt, 2026. szeptember",
+            "quantity_raw": "1 200 db",
+            "quantity": "1200",
+            "unit": "db",
+            "unit_price_raw": "60 Ft",
+            "unit_price": "60",
+            "net_raw": "72 000 Ft",
+            "net": "72000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "A Kft.",
+          "inv_id_ext": "INV_A-2026-01",
+          "currency": "HUF",
+          "net": "72000",
+          "gross": "72000",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-KEK-C__INV-C-2026-02",
+      "expected_outcome": "mismatch",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-09-KEK-C.pdf",
+        "number": "TIG-2026-09-KEK-C",
+        "project": "Kék",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "C Kft.",
+        "contractor_tax_id": "45678901-2-06",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap)",
+            "quantity_raw": "950 db",
+            "quantity": "950",
+            "unit": "db",
+            "unit_price_raw": "0,40 EUR",
+            "unit_price": "0.40",
+            "net_raw": "380,00 EUR",
+            "net": "380.00"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "42 db",
+            "quantity": "42",
+            "unit": "db",
+            "unit_price_raw": "14,50 EUR",
+            "unit_price": "14.50",
+            "net_raw": "609,00 EUR",
+            "net": "609.00"
+          }
+        ],
+        "total_net_raw": "989,00 EUR",
+        "total_net": "989.00",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV-C-2026-02.pdf",
+        "supplier": "C Kft.",
+        "supplier_tax_id": "45678901-2-06",
+        "supplier_country": "HU",
+        "invoice_number": "INV-C-2026-02",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "1 073,00 EUR",
+        "net": "1073.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "289,71 EUR",
+        "vat": "289.71",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "1 362,71 EUR",
+        "gross": "1362.71",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap) – Kék projekt, 2026. szeptember",
+            "quantity_raw": "950 db",
+            "quantity": "950",
+            "unit": "db",
+            "unit_price_raw": "0,40 EUR",
+            "unit_price": "0.40",
+            "net_raw": "380,00 EUR",
+            "net": "380.00",
+            "vat_raw": "102,60 EUR",
+            "vat": "102.60",
+            "gross_raw": "482,60 EUR",
+            "gross": "482.60"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Kék projekt, 2026. szeptember",
+            "quantity_raw": "42 db",
+            "quantity": "42",
+            "unit": "db",
+            "unit_price_raw": "16,50 EUR",
+            "unit_price": "16.50",
+            "net_raw": "693,00 EUR",
+            "net": "693.00",
+            "vat_raw": "187,11 EUR",
+            "vat": "187.11",
+            "gross_raw": "880,11 EUR",
+            "gross": "880.11"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "C Kft.",
+          "inv_id_ext": "INV-C-2026-02",
+          "currency": "EUR",
+          "net": "1073.00",
+          "gross": "1362.71",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 1,
+          "field": "unit_price",
+          "invoice_value": "16.50",
+          "tig_value": "14.50",
+          "invoice_raw": "16,50 EUR",
+          "tig_raw": "14,50 EUR"
+        },
+        {
+          "line_index": null,
+          "field": "total_net",
+          "invoice_value": "1073.00",
+          "tig_value": "989.00",
+          "invoice_raw": "1 073,00 EUR",
+          "tig_raw": "989,00 EUR"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-09-LILA-E__INV_E-2026-01_LILA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-LILA-E.pdf",
+        "number": "TIG-2026-09-LILA-E",
+        "project": "Lila",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "E Kft.",
+        "contractor_tax_id": "67890123-2-13",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "39 db",
+            "quantity": "39",
+            "unit": "db",
+            "unit_price_raw": "2 500 Ft",
+            "unit_price": "2500",
+            "net_raw": "97 500 Ft",
+            "net": "97500"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_E-2026-01_LILA.pdf",
+        "supplier": "E Kft.",
+        "supplier_tax_id": "67890123-2-13",
+        "supplier_country": "HU",
+        "invoice_number": "INV_E-2026-01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "97 500 Ft",
+        "net": "97500",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "26 325 Ft",
+        "vat": "26325",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "123 825 Ft",
+        "gross": "123825",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Lila projekt, 2026. szeptember",
+            "quantity_raw": "39 db",
+            "quantity": "39",
+            "unit": "db",
+            "unit_price_raw": "2 500 Ft",
+            "unit_price": "2500",
+            "net_raw": "97 500 Ft",
+            "net": "97500",
+            "vat_raw": "26 325 Ft",
+            "vat": "26325",
+            "gross_raw": "123 825 Ft",
+            "gross": "123825"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "E Kft.",
+          "inv_id_ext": "INV_E-2026-01",
+          "currency": "HUF",
+          "net": "97500",
+          "gross": "123825",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-LILA-H__INV_H_2026_02_LILA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-LILA-H.pdf",
+        "number": "TIG-2026-09-LILA-H",
+        "project": "Lila",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "H Kft.",
+        "contractor_tax_id": "90123456-2-05",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Hangosítás és rendezvénytechnika-bérlés",
+            "quantity_raw": "2 nap",
+            "quantity": "2",
+            "unit": "nap",
+            "unit_price_raw": "263,50 EUR",
+            "unit_price": "263.50",
+            "net_raw": "527,00 EUR",
+            "net": "527.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_H_2026_02_LILA.pdf",
+        "supplier": "H Kft.",
+        "supplier_tax_id": "90123456-2-05",
+        "supplier_country": "HU",
+        "invoice_number": "INV/H/2026/02",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "527,00 EUR",
+        "net": "527.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "142,29 EUR",
+        "vat": "142.29",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "669,29 EUR",
+        "gross": "669.29",
+        "lines": [
+          {
+            "description": "Hangosítás és rendezvénytechnika-bérlés – Lila projekt, 2026. szeptember",
+            "quantity_raw": "2 nap",
+            "quantity": "2",
+            "unit": "nap",
+            "unit_price_raw": "263,50 EUR",
+            "unit_price": "263.50",
+            "net_raw": "527,00 EUR",
+            "net": "527.00",
+            "vat_raw": "142,29 EUR",
+            "vat": "142.29",
+            "gross_raw": "669,29 EUR",
+            "gross": "669.29"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "H Kft.",
+          "inv_id_ext": "INV/H/2026/02",
+          "currency": "EUR",
+          "net": "527.00",
+          "gross": "669.29",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-MAGENTA-G__INV.G.2026.01_MAGENTA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-MAGENTA-G.pdf",
+        "number": "TIG-2026-09-MAGENTA-G",
+        "project": "Magenta",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "G Kft.",
+        "contractor_tax_id": "89012345-2-07",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás",
+            "quantity_raw": "5 óra",
+            "quantity": "5",
+            "unit": "óra",
+            "unit_price_raw": "41,50 EUR",
+            "unit_price": "41.50",
+            "net_raw": "207,50 EUR",
+            "net": "207.50"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV.G.2026.01_MAGENTA.pdf",
+        "supplier": "G Kft.",
+        "supplier_tax_id": "89012345-2-07",
+        "supplier_country": "HU",
+        "invoice_number": "INV.G.2026.01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": true,
+        "net_raw": "207,50 EUR",
+        "net": "207.50",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "207,50 EUR",
+        "gross": "207.50",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás – Magenta projekt, 2026. szeptember",
+            "quantity_raw": "5 óra",
+            "quantity": "5",
+            "unit": "óra",
+            "unit_price_raw": "41,50 EUR",
+            "unit_price": "41.50",
+            "net_raw": "207,50 EUR",
+            "net": "207.50",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "G Kft.",
+          "inv_id_ext": "INV.G.2026.01",
+          "currency": "EUR",
+          "net": "207.50",
+          "gross": "207.50",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-MAGENTA-H__INV_H_2026_01_MAGENTA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-MAGENTA-H.pdf",
+        "number": "TIG-2026-09-MAGENTA-H",
+        "project": "Magenta",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "H Kft.",
+        "contractor_tax_id": "90123456-2-05",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás",
+            "quantity_raw": "3 alkalom",
+            "quantity": "3",
+            "unit": "alkalom",
+            "unit_price_raw": "157,50 EUR",
+            "unit_price": "157.50",
+            "net_raw": "472,50 EUR",
+            "net": "472.50"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_H_2026_01_MAGENTA.pdf",
+        "supplier": "H Kft.",
+        "supplier_tax_id": "90123456-2-05",
+        "supplier_country": "HU",
+        "invoice_number": "INV/H/2026/01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "472,50 EUR",
+        "net": "472.50",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "127,58 EUR",
+        "vat": "127.58",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "600,08 EUR",
+        "gross": "600.08",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás – Magenta projekt, 2026. szeptember",
+            "quantity_raw": "3 alkalom",
+            "quantity": "3",
+            "unit": "alkalom",
+            "unit_price_raw": "157,50 EUR",
+            "unit_price": "157.50",
+            "net_raw": "472,50 EUR",
+            "net": "472.50",
+            "vat_raw": "127,58 EUR",
+            "vat": "127.58",
+            "gross_raw": "600,08 EUR",
+            "gross": "600.08"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "H Kft.",
+          "inv_id_ext": "INV/H/2026/01",
+          "currency": "EUR",
+          "net": "472.50",
+          "gross": "600.08",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-PINK-E__INV_E-2026-02_PINK",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-PINK-E.pdf",
+        "number": "TIG-2026-09-PINK-E",
+        "project": "Pink",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "E Kft.",
+        "contractor_tax_id": "67890123-2-13",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás",
+            "quantity_raw": "9 óra",
+            "quantity": "9",
+            "unit": "óra",
+            "unit_price_raw": "12 000 Ft",
+            "unit_price": "12000",
+            "net_raw": "108 000 Ft",
+            "net": "108000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_E-2026-02_PINK.pdf",
+        "supplier": "E Kft.",
+        "supplier_tax_id": "67890123-2-13",
+        "supplier_country": "HU",
+        "invoice_number": "INV_E-2026-02",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "108 000 Ft",
+        "net": "108000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "29 160 Ft",
+        "vat": "29160",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "137 160 Ft",
+        "gross": "137160",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás – Pink projekt, 2026. szeptember",
+            "quantity_raw": "9 óra",
+            "quantity": "9",
+            "unit": "óra",
+            "unit_price_raw": "12 000 Ft",
+            "unit_price": "12000",
+            "net_raw": "108 000 Ft",
+            "net": "108000",
+            "vat_raw": "29 160 Ft",
+            "vat": "29160",
+            "gross_raw": "137 160 Ft",
+            "gross": "137160"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "E Kft.",
+          "inv_id_ext": "INV_E-2026-02",
+          "currency": "HUF",
+          "net": "108000",
+          "gross": "137160",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-PINK-F__INV-F_2026_01_PINK",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-PINK-F.pdf",
+        "number": "TIG-2026-09-PINK-F",
+        "project": "Pink",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "F Kft.",
+        "contractor_tax_id": "78901234-2-02",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "35 db",
+            "quantity": "35",
+            "unit": "db",
+            "unit_price_raw": "3 000 Ft",
+            "unit_price": "3000",
+            "net_raw": "105 000 Ft",
+            "net": "105000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV-F_2026_01_PINK.pdf",
+        "supplier": "F Kft.",
+        "supplier_tax_id": "78901234-2-02",
+        "supplier_country": "HU",
+        "invoice_number": "INV-F/2026/01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "105 000 Ft",
+        "net": "105000",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "105 000 Ft",
+        "gross": "105000",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Pink projekt, 2026. szeptember",
+            "quantity_raw": "35 db",
+            "quantity": "35",
+            "unit": "db",
+            "unit_price_raw": "3 000 Ft",
+            "unit_price": "3000",
+            "net_raw": "105 000 Ft",
+            "net": "105000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "F Kft.",
+          "inv_id_ext": "INV-F/2026/01",
+          "currency": "HUF",
+          "net": "105000",
+          "gross": "105000",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-PIROS-D__INV_D_2026_01",
+      "expected_outcome": "mismatch",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-09-PIROS-D.pdf",
+        "number": "TIG-2026-09-PIROS-D",
+        "project": "Piros",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "D Kft.",
+        "contractor_tax_id": "56789012-2-08",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap)",
+            "quantity_raw": "1 300 db",
+            "quantity": "1300",
+            "unit": "db",
+            "unit_price_raw": "0,22 EUR",
+            "unit_price": "0.22",
+            "net_raw": "286,00 EUR",
+            "net": "286.00"
+          },
+          {
+            "description": "Rendezvénycatering (fő/alkalom)",
+            "quantity_raw": "44 fő",
+            "quantity": "44",
+            "unit": "fő",
+            "unit_price_raw": "28,00 EUR",
+            "unit_price": "28.00",
+            "net_raw": "1 232,00 EUR",
+            "net": "1232.00"
+          },
+          {
+            "description": "Továbbképzési tréning (kommunikáció)",
+            "quantity_raw": "3 nap",
+            "quantity": "3",
+            "unit": "nap",
+            "unit_price_raw": "305,50 EUR",
+            "unit_price": "305.50",
+            "net_raw": "916,50 EUR",
+            "net": "916.50"
+          }
+        ],
+        "total_net_raw": "2 434,50 EUR",
+        "total_net": "2434.50",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_D_2026_01.pdf",
+        "supplier": "D Kft.",
+        "supplier_tax_id": "56789012-2-08",
+        "supplier_country": "HU",
+        "invoice_number": "INV/D/2026/01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "2 463,10 EUR",
+        "net": "2463.10",
+        "vat_label_raw": "ÁFA (27%)",
+        "vat_raw": "665,04 EUR",
+        "vat": "665.04",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "3 128,14 EUR",
+        "gross": "3128.14",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap) – Piros projekt, 2026. szeptember",
+            "quantity_raw": "1 430 db",
+            "quantity": "1430",
+            "unit": "db",
+            "unit_price_raw": "0,22 EUR",
+            "unit_price": "0.22",
+            "net_raw": "314,60 EUR",
+            "net": "314.60",
+            "vat_raw": "84,94 EUR",
+            "vat": "84.94",
+            "gross_raw": "399,54 EUR",
+            "gross": "399.54"
+          },
+          {
+            "description": "Rendezvénycatering (fő/alkalom) – Piros projekt, 2026. szeptember",
+            "quantity_raw": "44 fő",
+            "quantity": "44",
+            "unit": "fő",
+            "unit_price_raw": "28,00 EUR",
+            "unit_price": "28.00",
+            "net_raw": "1 232,00 EUR",
+            "net": "1232.00",
+            "vat_raw": "332,64 EUR",
+            "vat": "332.64",
+            "gross_raw": "1 564,64 EUR",
+            "gross": "1564.64"
+          },
+          {
+            "description": "Továbbképzési tréning (kommunikáció) – Piros projekt, 2026. szeptember",
+            "quantity_raw": "3 nap",
+            "quantity": "3",
+            "unit": "nap",
+            "unit_price_raw": "305,50 EUR",
+            "unit_price": "305.50",
+            "net_raw": "916,50 EUR",
+            "net": "916.50",
+            "vat_raw": "247,46 EUR",
+            "vat": "247.46",
+            "gross_raw": "1 163,96 EUR",
+            "gross": "1163.96"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "D Kft.",
+          "inv_id_ext": "INV/D/2026/01",
+          "currency": "EUR",
+          "net": "2463.10",
+          "gross": "3128.14",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 0,
+          "field": "quantity",
+          "invoice_value": "1430",
+          "tig_value": "1300",
+          "invoice_raw": "1 430 db",
+          "tig_raw": "1 300 db"
+        },
+        {
+          "line_index": null,
+          "field": "total_net",
+          "invoice_value": "2463.10",
+          "tig_value": "2434.50",
+          "invoice_raw": "2 463,10 EUR",
+          "tig_raw": "2 434,50 EUR"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-09-SARGA-A__INV_A-2026-02",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-09-SARGA-A.pdf",
+        "number": "TIG-2026-09-SARGA-A",
+        "project": "Sárga",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "A Kft.",
+        "contractor_tax_id": "23456789-2-43",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "48 db",
+            "quantity": "48",
+            "unit": "db",
+            "unit_price_raw": "4 500 Ft",
+            "unit_price": "4500",
+            "net_raw": "216 000 Ft",
+            "net": "216000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_A-2026-02.pdf",
+        "supplier": "A Kft.",
+        "supplier_tax_id": "23456789-2-43",
+        "supplier_country": "HU",
+        "invoice_number": "INV_A-2026-02",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "216 000 Ft",
+        "net": "216000",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "216 000 Ft",
+        "gross": "216000",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Sárga projekt, 2026. szeptember",
+            "quantity_raw": "48 db",
+            "quantity": "48",
+            "unit": "db",
+            "unit_price_raw": "4 500 Ft",
+            "unit_price": "4500",
+            "net_raw": "216 000 Ft",
+            "net": "216000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "A Kft.",
+          "inv_id_ext": "INV_A-2026-02",
+          "currency": "HUF",
+          "net": "216000",
+          "gross": "216000",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-SARGA-C__INV-C-2026-01",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-09-SARGA-C.pdf",
+        "number": "TIG-2026-09-SARGA-C",
+        "project": "Sárga",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "C Kft.",
+        "contractor_tax_id": "45678901-2-06",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Rendezvénycatering (fő/alkalom)",
+            "quantity_raw": "21 fő",
+            "quantity": "21",
+            "unit": "fő",
+            "unit_price_raw": "34,00 EUR",
+            "unit_price": "34.00",
+            "net_raw": "714,00 EUR",
+            "net": "714.00"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "50 db",
+            "quantity": "50",
+            "unit": "db",
+            "unit_price_raw": "13,00 EUR",
+            "unit_price": "13.00",
+            "net_raw": "650,00 EUR",
+            "net": "650.00"
+          },
+          {
+            "description": "Fotós szolgáltatás rendezvényen",
+            "quantity_raw": "4 óra",
+            "quantity": "4",
+            "unit": "óra",
+            "unit_price_raw": "57,50 EUR",
+            "unit_price": "57.50",
+            "net_raw": "230,00 EUR",
+            "net": "230.00"
+          }
+        ],
+        "total_net_raw": "1 594,00 EUR",
+        "total_net": "1594.00",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV-C-2026-01.pdf",
+        "supplier": "C Kft.",
+        "supplier_tax_id": "45678901-2-06",
+        "supplier_country": "HU",
+        "invoice_number": "INV-C-2026-01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "1 594,00 EUR",
+        "net": "1594.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "430,38 EUR",
+        "vat": "430.38",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "2 024,38 EUR",
+        "gross": "2024.38",
+        "lines": [
+          {
+            "description": "Rendezvénycatering (fő/alkalom) – Sárga projekt, 2026. szeptember",
+            "quantity_raw": "21 fő",
+            "quantity": "21",
+            "unit": "fő",
+            "unit_price_raw": "34,00 EUR",
+            "unit_price": "34.00",
+            "net_raw": "714,00 EUR",
+            "net": "714.00",
+            "vat_raw": "192,78 EUR",
+            "vat": "192.78",
+            "gross_raw": "906,78 EUR",
+            "gross": "906.78"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Sárga projekt, 2026. szeptember",
+            "quantity_raw": "50 db",
+            "quantity": "50",
+            "unit": "db",
+            "unit_price_raw": "13,00 EUR",
+            "unit_price": "13.00",
+            "net_raw": "650,00 EUR",
+            "net": "650.00",
+            "vat_raw": "175,50 EUR",
+            "vat": "175.50",
+            "gross_raw": "825,50 EUR",
+            "gross": "825.50"
+          },
+          {
+            "description": "Fotós szolgáltatás rendezvényen – Sárga projekt, 2026. szeptember",
+            "quantity_raw": "4 óra",
+            "quantity": "4",
+            "unit": "óra",
+            "unit_price_raw": "57,50 EUR",
+            "unit_price": "57.50",
+            "net_raw": "230,00 EUR",
+            "net": "230.00",
+            "vat_raw": "62,10 EUR",
+            "vat": "62.10",
+            "gross_raw": "292,10 EUR",
+            "gross": "292.10"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "C Kft.",
+          "inv_id_ext": "INV-C-2026-01",
+          "currency": "EUR",
+          "net": "1594.00",
+          "gross": "2024.38",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-ZOLD-B__INV-B_2026_01",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-09-ZOLD-B.pdf",
+        "number": "TIG-2026-09-ZOLD-B",
+        "project": "Zöld",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "B Kft.",
+        "contractor_tax_id": "34567890-2-09",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás",
+            "quantity_raw": "39 óra",
+            "quantity": "39",
+            "unit": "óra",
+            "unit_price_raw": "8 000 Ft",
+            "unit_price": "8000",
+            "net_raw": "312 000 Ft",
+            "net": "312000"
+          },
+          {
+            "description": "Munkavédelmi oktatás",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "49 000 Ft",
+            "unit_price": "49000",
+            "net_raw": "245 000 Ft",
+            "net": "245000"
+          },
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "120 000 Ft",
+            "unit_price": "120000",
+            "net_raw": "120 000 Ft",
+            "net": "120000"
+          }
+        ],
+        "total_net_raw": "677 000 Ft",
+        "total_net": "677000",
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV-B_2026_01.pdf",
+        "supplier": "B Kft.",
+        "supplier_tax_id": "34567890-2-09",
+        "supplier_country": "HU",
+        "invoice_number": "INV-B/2026/01",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "677 000 Ft",
+        "net": "677000",
+        "vat_label_raw": "ÁFA-összesítő 27% / Összesen",
+        "vat_raw": "182 790 Ft",
+        "vat": "182790",
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "859 790 Ft",
+        "gross": "859790",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "39 óra",
+            "quantity": "39",
+            "unit": "óra",
+            "unit_price_raw": "8 000 Ft",
+            "unit_price": "8000",
+            "net_raw": "312 000 Ft",
+            "net": "312000",
+            "vat_raw": "84 240 Ft",
+            "vat": "84240",
+            "gross_raw": "396 240 Ft",
+            "gross": "396240"
+          },
+          {
+            "description": "Munkavédelmi oktatás – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "49 000 Ft",
+            "unit_price": "49000",
+            "net_raw": "245 000 Ft",
+            "net": "245000",
+            "vat_raw": "66 150 Ft",
+            "vat": "66150",
+            "gross_raw": "311 150 Ft",
+            "gross": "311150"
+          },
+          {
+            "description": "Könyvelési szolgáltatás – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "120 000 Ft",
+            "unit_price": "120000",
+            "net_raw": "120 000 Ft",
+            "net": "120000",
+            "vat_raw": "32 400 Ft",
+            "vat": "32400",
+            "gross_raw": "152 400 Ft",
+            "gross": "152400"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "B Kft.",
+          "inv_id_ext": "INV-B/2026/01",
+          "currency": "HUF",
+          "net": "677000",
+          "gross": "859790",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-09-ZOLD-D__INV_D_2026_02",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-09-ZOLD-D.pdf",
+        "number": "TIG-2026-09-ZOLD-D",
+        "project": "Zöld",
+        "period": "2026. szeptember",
+        "period_range_raw": "2026.09.01. – 2026.09.30.",
+        "contractor": "D Kft.",
+        "contractor_tax_id": "56789012-2-08",
+        "issued_raw": "2026. október 5.",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap)",
+            "quantity_raw": "1 050 db",
+            "quantity": "1050",
+            "unit": "db",
+            "unit_price_raw": "0,17 EUR",
+            "unit_price": "0.17",
+            "net_raw": "178,50 EUR",
+            "net": "178.50"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "47 db",
+            "quantity": "47",
+            "unit": "db",
+            "unit_price_raw": "13,50 EUR",
+            "unit_price": "13.50",
+            "net_raw": "634,50 EUR",
+            "net": "634.50"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "286,50 EUR",
+            "unit_price": "286.50",
+            "net_raw": "286,50 EUR",
+            "net": "286.50"
+          }
+        ],
+        "total_net_raw": "1 099,50 EUR",
+        "total_net": "1099.50",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_D_2026_02.pdf",
+        "supplier": "D Kft.",
+        "supplier_tax_id": "56789012-2-08",
+        "supplier_country": "HU",
+        "invoice_number": "INV/D/2026/02",
+        "issue_date_raw": "2026.10.05.",
+        "supply_date_raw": "2026.10.05.",
+        "due_date_raw": "2026.11.04.",
+        "performance_date_raw": "2026.10.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "1 099,50 EUR",
+        "net": "1099.50",
+        "vat_label_raw": "ÁFA (27%)",
+        "vat_raw": "296,88 EUR",
+        "vat": "296.88",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "1 396,38 EUR",
+        "gross": "1396.38",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap) – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "1 050 db",
+            "quantity": "1050",
+            "unit": "db",
+            "unit_price_raw": "0,17 EUR",
+            "unit_price": "0.17",
+            "net_raw": "178,50 EUR",
+            "net": "178.50",
+            "vat_raw": "48,20 EUR",
+            "vat": "48.20",
+            "gross_raw": "226,70 EUR",
+            "gross": "226.70"
+          },
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "47 db",
+            "quantity": "47",
+            "unit": "db",
+            "unit_price_raw": "13,50 EUR",
+            "unit_price": "13.50",
+            "net_raw": "634,50 EUR",
+            "net": "634.50",
+            "vat_raw": "171,32 EUR",
+            "vat": "171.32",
+            "gross_raw": "805,82 EUR",
+            "gross": "805.82"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés – Zöld projekt, 2026. szeptember",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "286,50 EUR",
+            "unit_price": "286.50",
+            "net_raw": "286,50 EUR",
+            "net": "286.50",
+            "vat_raw": "77,36 EUR",
+            "vat": "77.36",
+            "gross_raw": "363,86 EUR",
+            "gross": "363.86"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "D Kft.",
+          "inv_id_ext": "INV/D/2026/02",
+          "currency": "EUR",
+          "net": "1099.50",
+          "gross": "1396.38",
+          "due_date": "2026.11.04",
+          "performance_date": "2026.10.05",
+          "yymm": "2610"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-KEK-A__INV_A-2026-03",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-KEK-A.pdf",
+        "number": "TIG-2026-10-KEK-A",
+        "project": "Kék",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "A Kft.",
+        "contractor_tax_id": "23456789-2-43",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "43 db",
+            "quantity": "43",
+            "unit": "db",
+            "unit_price_raw": "3 500 Ft",
+            "unit_price": "3500",
+            "net_raw": "150 500 Ft",
+            "net": "150500"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "4 alkalom",
+            "quantity": "4",
+            "unit": "alkalom",
+            "unit_price_raw": "101 000 Ft",
+            "unit_price": "101000",
+            "net_raw": "404 000 Ft",
+            "net": "404000"
+          },
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás",
+            "quantity_raw": "38 óra",
+            "quantity": "38",
+            "unit": "óra",
+            "unit_price_raw": "7 000 Ft",
+            "unit_price": "7000",
+            "net_raw": "266 000 Ft",
+            "net": "266000"
+          }
+        ],
+        "total_net_raw": "820 500 Ft",
+        "total_net": "820500",
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_A-2026-03.pdf",
+        "supplier": "A Kft.",
+        "supplier_tax_id": "23456789-2-43",
+        "supplier_country": "HU",
+        "invoice_number": "INV_A-2026-03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "820 500 Ft",
+        "net": "820500",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "820 500 Ft",
+        "gross": "820500",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Kék projekt, 2026. október",
+            "quantity_raw": "43 db",
+            "quantity": "43",
+            "unit": "db",
+            "unit_price_raw": "3 500 Ft",
+            "unit_price": "3500",
+            "net_raw": "150 500 Ft",
+            "net": "150500",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          },
+          {
+            "description": "Személyszállítás, buszbérlés – Kék projekt, 2026. október",
+            "quantity_raw": "4 alkalom",
+            "quantity": "4",
+            "unit": "alkalom",
+            "unit_price_raw": "101 000 Ft",
+            "unit_price": "101000",
+            "net_raw": "404 000 Ft",
+            "net": "404000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          },
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás – Kék projekt, 2026. október",
+            "quantity_raw": "38 óra",
+            "quantity": "38",
+            "unit": "óra",
+            "unit_price_raw": "7 000 Ft",
+            "unit_price": "7000",
+            "net_raw": "266 000 Ft",
+            "net": "266000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "A Kft.",
+          "inv_id_ext": "INV_A-2026-03",
+          "currency": "HUF",
+          "net": "820500",
+          "gross": "820500",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-KEK-C__INV-C-2026-04",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-KEK-C.pdf",
+        "number": "TIG-2026-10-KEK-C",
+        "project": "Kék",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "C Kft.",
+        "contractor_tax_id": "45678901-2-06",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Továbbképzési tréning (kommunikáció)",
+            "quantity_raw": "4 nap",
+            "quantity": "4",
+            "unit": "nap",
+            "unit_price_raw": "395,50 EUR",
+            "unit_price": "395.50",
+            "net_raw": "1 582,00 EUR",
+            "net": "1582.00"
+          },
+          {
+            "description": "Takarítógép-bérlés",
+            "quantity_raw": "6 nap",
+            "quantity": "6",
+            "unit": "nap",
+            "unit_price_raw": "65,00 EUR",
+            "unit_price": "65.00",
+            "net_raw": "390,00 EUR",
+            "net": "390.00"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "216,00 EUR",
+            "unit_price": "216.00",
+            "net_raw": "216,00 EUR",
+            "net": "216.00"
+          }
+        ],
+        "total_net_raw": "2 188,00 EUR",
+        "total_net": "2188.00",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV-C-2026-04.pdf",
+        "supplier": "C Kft.",
+        "supplier_tax_id": "45678901-2-06",
+        "supplier_country": "HU",
+        "invoice_number": "INV-C-2026-04",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "2 188,00 EUR",
+        "net": "2188.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "590,76 EUR",
+        "vat": "590.76",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "2 778,76 EUR",
+        "gross": "2778.76",
+        "lines": [
+          {
+            "description": "Továbbképzési tréning (kommunikáció) – Kék projekt, 2026. október",
+            "quantity_raw": "4 nap",
+            "quantity": "4",
+            "unit": "nap",
+            "unit_price_raw": "395,50 EUR",
+            "unit_price": "395.50",
+            "net_raw": "1 582,00 EUR",
+            "net": "1582.00",
+            "vat_raw": "427,14 EUR",
+            "vat": "427.14",
+            "gross_raw": "2 009,14 EUR",
+            "gross": "2009.14"
+          },
+          {
+            "description": "Takarítógép-bérlés – Kék projekt, 2026. október",
+            "quantity_raw": "6 nap",
+            "quantity": "6",
+            "unit": "nap",
+            "unit_price_raw": "65,00 EUR",
+            "unit_price": "65.00",
+            "net_raw": "390,00 EUR",
+            "net": "390.00",
+            "vat_raw": "105,30 EUR",
+            "vat": "105.30",
+            "gross_raw": "495,30 EUR",
+            "gross": "495.30"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés – Kék projekt, 2026. október",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "216,00 EUR",
+            "unit_price": "216.00",
+            "net_raw": "216,00 EUR",
+            "net": "216.00",
+            "vat_raw": "58,32 EUR",
+            "vat": "58.32",
+            "gross_raw": "274,32 EUR",
+            "gross": "274.32"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "C Kft.",
+          "inv_id_ext": "INV-C-2026-04",
+          "currency": "EUR",
+          "net": "2188.00",
+          "gross": "2778.76",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-LILA-E__INV_E-2026-03_LILA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-LILA-E.pdf",
+        "number": "TIG-2026-10-LILA-E",
+        "project": "Lila",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "E Kft.",
+        "contractor_tax_id": "67890123-2-13",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap)",
+            "quantity_raw": "800 db",
+            "quantity": "800",
+            "unit": "db",
+            "unit_price_raw": "60 Ft",
+            "unit_price": "60",
+            "net_raw": "48 000 Ft",
+            "net": "48000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_E-2026-03_LILA.pdf",
+        "supplier": "E Kft.",
+        "supplier_tax_id": "67890123-2-13",
+        "supplier_country": "HU",
+        "invoice_number": "INV_E-2026-03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "48 000 Ft",
+        "net": "48000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "12 960 Ft",
+        "vat": "12960",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "60 960 Ft",
+        "gross": "60960",
+        "lines": [
+          {
+            "description": "Nyomdai szolgáltatás (szórólap) – Lila projekt, 2026. október",
+            "quantity_raw": "800 db",
+            "quantity": "800",
+            "unit": "db",
+            "unit_price_raw": "60 Ft",
+            "unit_price": "60",
+            "net_raw": "48 000 Ft",
+            "net": "48000",
+            "vat_raw": "12 960 Ft",
+            "vat": "12960",
+            "gross_raw": "60 960 Ft",
+            "gross": "60960"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "E Kft.",
+          "inv_id_ext": "INV_E-2026-03",
+          "currency": "HUF",
+          "net": "48000",
+          "gross": "60960",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-LILA-H__INV_H_2026_04_LILA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-LILA-H.pdf",
+        "number": "TIG-2026-10-LILA-H",
+        "project": "Lila",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "H Kft.",
+        "contractor_tax_id": "90123456-2-05",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Rendezvénycatering (fő/alkalom)",
+            "quantity_raw": "50 fő",
+            "quantity": "50",
+            "unit": "fő",
+            "unit_price_raw": "37,50 EUR",
+            "unit_price": "37.50",
+            "net_raw": "1 875,00 EUR",
+            "net": "1875.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_H_2026_04_LILA.pdf",
+        "supplier": "H Kft.",
+        "supplier_tax_id": "90123456-2-05",
+        "supplier_country": "HU",
+        "invoice_number": "INV/H/2026/04",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "1 875,00 EUR",
+        "net": "1875.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "506,25 EUR",
+        "vat": "506.25",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "2 381,25 EUR",
+        "gross": "2381.25",
+        "lines": [
+          {
+            "description": "Rendezvénycatering (fő/alkalom) – Lila projekt, 2026. október",
+            "quantity_raw": "50 fő",
+            "quantity": "50",
+            "unit": "fő",
+            "unit_price_raw": "37,50 EUR",
+            "unit_price": "37.50",
+            "net_raw": "1 875,00 EUR",
+            "net": "1875.00",
+            "vat_raw": "506,25 EUR",
+            "vat": "506.25",
+            "gross_raw": "2 381,25 EUR",
+            "gross": "2381.25"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "H Kft.",
+          "inv_id_ext": "INV/H/2026/04",
+          "currency": "EUR",
+          "net": "1875.00",
+          "gross": "2381.25",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-LILA-J__INV_J_2026_02_LILA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-LILA-J.pdf",
+        "number": "TIG-2026-10-LILA-J",
+        "project": "Lila",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "J Kft.",
+        "contractor_tax_id": "11223344-2-16",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás",
+            "quantity_raw": "4 óra",
+            "quantity": "4",
+            "unit": "óra",
+            "unit_price_raw": "10 500 Ft",
+            "unit_price": "10500",
+            "net_raw": "42 000 Ft",
+            "net": "42000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_J_2026_02_LILA.pdf",
+        "supplier": "J Kft.",
+        "supplier_tax_id": "11223344-2-16",
+        "supplier_country": "HU",
+        "invoice_number": "INV_J/2026/02",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "42 000 Ft",
+        "net": "42000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "11 340 Ft",
+        "vat": "11340",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "53 340 Ft",
+        "gross": "53340",
+        "lines": [
+          {
+            "description": "Épületgépészeti karbantartás – Lila projekt, 2026. október",
+            "quantity_raw": "4 óra",
+            "quantity": "4",
+            "unit": "óra",
+            "unit_price_raw": "10 500 Ft",
+            "unit_price": "10500",
+            "net_raw": "42 000 Ft",
+            "net": "42000",
+            "vat_raw": "11 340 Ft",
+            "vat": "11340",
+            "gross_raw": "53 340 Ft",
+            "gross": "53340"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "J Kft.",
+          "inv_id_ext": "INV_J/2026/02",
+          "currency": "HUF",
+          "net": "42000",
+          "gross": "53340",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-LILA-K__INV.K-2026-02_LILA",
+      "expected_outcome": "mismatch",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-LILA-K.pdf",
+        "number": "TIG-2026-10-LILA-K",
+        "project": "Lila",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "K Kft.",
+        "contractor_tax_id": "22334455-2-03",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Jogi tanácsadás",
+            "quantity_raw": "11 óra",
+            "quantity": "11",
+            "unit": "óra",
+            "unit_price_raw": "103,50 EUR",
+            "unit_price": "103.50",
+            "net_raw": "1 138,50 EUR",
+            "net": "1138.50"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV.K-2026-02_LILA.pdf",
+        "supplier": "K Kft.",
+        "supplier_tax_id": "22334455-2-03",
+        "supplier_country": "HU",
+        "invoice_number": "INV.K-2026-02",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": true,
+        "net_raw": "1 242,00 EUR",
+        "net": "1242.00",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "1 242,00 EUR",
+        "gross": "1242.00",
+        "lines": [
+          {
+            "description": "Jogi tanácsadás – Lila projekt, 2026. október",
+            "quantity_raw": "12 óra",
+            "quantity": "12",
+            "unit": "óra",
+            "unit_price_raw": "103,50 EUR",
+            "unit_price": "103.50",
+            "net_raw": "1 242,00 EUR",
+            "net": "1242.00",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "K Kft.",
+          "inv_id_ext": "INV.K-2026-02",
+          "currency": "EUR",
+          "net": "1242.00",
+          "gross": "1242.00",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 0,
+          "field": "quantity",
+          "invoice_value": "12",
+          "tig_value": "11",
+          "invoice_raw": "12 óra",
+          "tig_raw": "11 óra"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-10-MAGENTA-G__INV.G.2026.02_MAGENTA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-MAGENTA-G.pdf",
+        "number": "TIG-2026-10-MAGENTA-G",
+        "project": "Magenta",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "G Kft.",
+        "contractor_tax_id": "89012345-2-07",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "171,00 EUR",
+            "unit_price": "171.00",
+            "net_raw": "855,00 EUR",
+            "net": "855.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV.G.2026.02_MAGENTA.pdf",
+        "supplier": "G Kft.",
+        "supplier_tax_id": "89012345-2-07",
+        "supplier_country": "HU",
+        "invoice_number": "INV.G.2026.02",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": true,
+        "net_raw": "855,00 EUR",
+        "net": "855.00",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "855,00 EUR",
+        "gross": "855.00",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás – Magenta projekt, 2026. október",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "171,00 EUR",
+            "unit_price": "171.00",
+            "net_raw": "855,00 EUR",
+            "net": "855.00",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "G Kft.",
+          "inv_id_ext": "INV.G.2026.02",
+          "currency": "EUR",
+          "net": "855.00",
+          "gross": "855.00",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-MAGENTA-H__INV_H_2026_03_MAGENTA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-MAGENTA-H.pdf",
+        "number": "TIG-2026-10-MAGENTA-H",
+        "project": "Magenta",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "H Kft.",
+        "contractor_tax_id": "90123456-2-05",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás",
+            "quantity_raw": "22 óra",
+            "quantity": "22",
+            "unit": "óra",
+            "unit_price_raw": "18,50 EUR",
+            "unit_price": "18.50",
+            "net_raw": "407,00 EUR",
+            "net": "407.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_H_2026_03_MAGENTA.pdf",
+        "supplier": "H Kft.",
+        "supplier_tax_id": "90123456-2-05",
+        "supplier_country": "HU",
+        "invoice_number": "INV/H/2026/03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "407,00 EUR",
+        "net": "407.00",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "109,89 EUR",
+        "vat": "109.89",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "516,89 EUR",
+        "gross": "516.89",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás – Magenta projekt, 2026. október",
+            "quantity_raw": "22 óra",
+            "quantity": "22",
+            "unit": "óra",
+            "unit_price_raw": "18,50 EUR",
+            "unit_price": "18.50",
+            "net_raw": "407,00 EUR",
+            "net": "407.00",
+            "vat_raw": "109,89 EUR",
+            "vat": "109.89",
+            "gross_raw": "516,89 EUR",
+            "gross": "516.89"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "H Kft.",
+          "inv_id_ext": "INV/H/2026/03",
+          "currency": "EUR",
+          "net": "407.00",
+          "gross": "516.89",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-MAGENTA-J__INV_J_2026_03_MAGENTA",
+      "expected_outcome": "mismatch",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-MAGENTA-J.pdf",
+        "number": "TIG-2026-10-MAGENTA-J",
+        "project": "Magenta",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "J Kft.",
+        "contractor_tax_id": "11223344-2-16",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "187 000 Ft",
+            "unit_price": "187000",
+            "net_raw": "187 000 Ft",
+            "net": "187000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_J_2026_03_MAGENTA.pdf",
+        "supplier": "J Kft.",
+        "supplier_tax_id": "11223344-2-16",
+        "supplier_country": "HU",
+        "invoice_number": "INV_J/2026/03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "374 000 Ft",
+        "net": "374000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "100 980 Ft",
+        "vat": "100980",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "474 980 Ft",
+        "gross": "474980",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás – Magenta projekt, 2026. október",
+            "quantity_raw": "2 hó",
+            "quantity": "2",
+            "unit": "hó",
+            "unit_price_raw": "187 000 Ft",
+            "unit_price": "187000",
+            "net_raw": "374 000 Ft",
+            "net": "374000",
+            "vat_raw": "100 980 Ft",
+            "vat": "100980",
+            "gross_raw": "474 980 Ft",
+            "gross": "474980"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "J Kft.",
+          "inv_id_ext": "INV_J/2026/03",
+          "currency": "HUF",
+          "net": "374000",
+          "gross": "474980",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 0,
+          "field": "quantity",
+          "invoice_value": "2",
+          "tig_value": "1",
+          "invoice_raw": "2 hó",
+          "tig_raw": "1 hó"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-10-MAGENTA-K__INV.K-2026-03_MAGENTA",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-MAGENTA-K.pdf",
+        "number": "TIG-2026-10-MAGENTA-K",
+        "project": "Magenta",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "K Kft.",
+        "contractor_tax_id": "22334455-2-03",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás",
+            "quantity_raw": "22 óra",
+            "quantity": "22",
+            "unit": "óra",
+            "unit_price_raw": "20,00 EUR",
+            "unit_price": "20.00",
+            "net_raw": "440,00 EUR",
+            "net": "440.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV.K-2026-03_MAGENTA.pdf",
+        "supplier": "K Kft.",
+        "supplier_tax_id": "22334455-2-03",
+        "supplier_country": "HU",
+        "invoice_number": "INV.K-2026-03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": true,
+        "net_raw": "440,00 EUR",
+        "net": "440.00",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "440,00 EUR",
+        "gross": "440.00",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás – Magenta projekt, 2026. október",
+            "quantity_raw": "22 óra",
+            "quantity": "22",
+            "unit": "óra",
+            "unit_price_raw": "20,00 EUR",
+            "unit_price": "20.00",
+            "net_raw": "440,00 EUR",
+            "net": "440.00",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "K Kft.",
+          "inv_id_ext": "INV.K-2026-03",
+          "currency": "EUR",
+          "net": "440.00",
+          "gross": "440.00",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-PINK-E__INV_E-2026-04_PINK",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-PINK-E.pdf",
+        "number": "TIG-2026-10-PINK-E",
+        "project": "Pink",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "E Kft.",
+        "contractor_tax_id": "67890123-2-13",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "71 000 Ft",
+            "unit_price": "71000",
+            "net_raw": "355 000 Ft",
+            "net": "355000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_E-2026-04_PINK.pdf",
+        "supplier": "E Kft.",
+        "supplier_tax_id": "67890123-2-13",
+        "supplier_country": "HU",
+        "invoice_number": "INV_E-2026-04",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "355 000 Ft",
+        "net": "355000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "95 850 Ft",
+        "vat": "95850",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "450 850 Ft",
+        "gross": "450850",
+        "lines": [
+          {
+            "description": "Személyszállítás, buszbérlés – Pink projekt, 2026. október",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "71 000 Ft",
+            "unit_price": "71000",
+            "net_raw": "355 000 Ft",
+            "net": "355000",
+            "vat_raw": "95 850 Ft",
+            "vat": "95850",
+            "gross_raw": "450 850 Ft",
+            "gross": "450850"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "E Kft.",
+          "inv_id_ext": "INV_E-2026-04",
+          "currency": "HUF",
+          "net": "355000",
+          "gross": "450850",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-PINK-F__INV-F_2026_02_PINK",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-PINK-F.pdf",
+        "number": "TIG-2026-10-PINK-F",
+        "project": "Pink",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "F Kft.",
+        "contractor_tax_id": "78901234-2-02",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "154 000 Ft",
+            "unit_price": "154000",
+            "net_raw": "154 000 Ft",
+            "net": "154000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV-F_2026_02_PINK.pdf",
+        "supplier": "F Kft.",
+        "supplier_tax_id": "78901234-2-02",
+        "supplier_country": "HU",
+        "invoice_number": "INV-F/2026/02",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "154 000 Ft",
+        "net": "154000",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "154 000 Ft",
+        "gross": "154000",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás – Pink projekt, 2026. október",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "154 000 Ft",
+            "unit_price": "154000",
+            "net_raw": "154 000 Ft",
+            "net": "154000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "F Kft.",
+          "inv_id_ext": "INV-F/2026/02",
+          "currency": "HUF",
+          "net": "154000",
+          "gross": "154000",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-PINK-J__INV_J_2026_01_PINK",
+      "expected_outcome": "mismatch",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-PINK-J.pdf",
+        "number": "TIG-2026-10-PINK-J",
+        "project": "Pink",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "J Kft.",
+        "contractor_tax_id": "11223344-2-16",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Hangosítás és rendezvénytechnika-bérlés",
+            "quantity_raw": "1 nap",
+            "quantity": "1",
+            "unit": "nap",
+            "unit_price_raw": "83 000 Ft",
+            "unit_price": "83000",
+            "net_raw": "83 000 Ft",
+            "net": "83000"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_J_2026_01_PINK.pdf",
+        "supplier": "J Kft.",
+        "supplier_tax_id": "11223344-2-16",
+        "supplier_country": "HU",
+        "invoice_number": "INV_J/2026/01",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "95 000 Ft",
+        "net": "95000",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "25 650 Ft",
+        "vat": "25650",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "120 650 Ft",
+        "gross": "120650",
+        "lines": [
+          {
+            "description": "Hangosítás és rendezvénytechnika-bérlés – Pink projekt, 2026. október",
+            "quantity_raw": "1 nap",
+            "quantity": "1",
+            "unit": "nap",
+            "unit_price_raw": "95 000 Ft",
+            "unit_price": "95000",
+            "net_raw": "95 000 Ft",
+            "net": "95000",
+            "vat_raw": "25 650 Ft",
+            "vat": "25650",
+            "gross_raw": "120 650 Ft",
+            "gross": "120650"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "J Kft.",
+          "inv_id_ext": "INV_J/2026/01",
+          "currency": "HUF",
+          "net": "95000",
+          "gross": "120650",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 0,
+          "field": "unit_price",
+          "invoice_value": "95000",
+          "tig_value": "83000",
+          "invoice_raw": "95 000 Ft",
+          "tig_raw": "83 000 Ft"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-10-PINK-K__INV.K-2026-01_PINK",
+      "expected_outcome": "match",
+      "tig_kind": "single_line",
+      "tig": {
+        "file": "TIG-2026-10-PINK-K.pdf",
+        "number": "TIG-2026-10-PINK-K",
+        "project": "Pink",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "K Kft.",
+        "contractor_tax_id": "22334455-2-03",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "404,00 EUR",
+            "unit_price": "404.00",
+            "net_raw": "404,00 EUR",
+            "net": "404.00"
+          }
+        ],
+        "total_net_raw": null,
+        "total_net": null,
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV.K-2026-01_PINK.pdf",
+        "supplier": "K Kft.",
+        "supplier_tax_id": "22334455-2-03",
+        "supplier_country": "HU",
+        "invoice_number": "INV.K-2026-01",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": true,
+        "net_raw": "404,00 EUR",
+        "net": "404.00",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "404,00 EUR",
+        "gross": "404.00",
+        "lines": [
+          {
+            "description": "Könyvelési szolgáltatás – Pink projekt, 2026. október",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "404,00 EUR",
+            "unit_price": "404.00",
+            "net_raw": "404,00 EUR",
+            "net": "404.00",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "K Kft.",
+          "inv_id_ext": "INV.K-2026-01",
+          "currency": "EUR",
+          "net": "404.00",
+          "gross": "404.00",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-PIROS-D__INV_D_2026_03",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-PIROS-D.pdf",
+        "number": "TIG-2026-10-PIROS-D",
+        "project": "Piros",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "D Kft.",
+        "contractor_tax_id": "56789012-2-08",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás",
+            "quantity_raw": "43 db",
+            "quantity": "43",
+            "unit": "db",
+            "unit_price_raw": "17,50 EUR",
+            "unit_price": "17.50",
+            "net_raw": "752,50 EUR",
+            "net": "752.50"
+          },
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "676,50 EUR",
+            "unit_price": "676.50",
+            "net_raw": "676,50 EUR",
+            "net": "676.50"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "3 alkalom",
+            "quantity": "3",
+            "unit": "alkalom",
+            "unit_price_raw": "334,50 EUR",
+            "unit_price": "334.50",
+            "net_raw": "1 003,50 EUR",
+            "net": "1003.50"
+          }
+        ],
+        "total_net_raw": "2 432,50 EUR",
+        "total_net": "2432.50",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_D_2026_03.pdf",
+        "supplier": "D Kft.",
+        "supplier_tax_id": "56789012-2-08",
+        "supplier_country": "HU",
+        "invoice_number": "INV/D/2026/03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "2 432,50 EUR",
+        "net": "2432.50",
+        "vat_label_raw": "ÁFA (27%)",
+        "vat_raw": "656,79 EUR",
+        "vat": "656.79",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "3 089,29 EUR",
+        "gross": "3089.29",
+        "lines": [
+          {
+            "description": "Ruhatisztítás, szőnyegmosás – Piros projekt, 2026. október",
+            "quantity_raw": "43 db",
+            "quantity": "43",
+            "unit": "db",
+            "unit_price_raw": "17,50 EUR",
+            "unit_price": "17.50",
+            "net_raw": "752,50 EUR",
+            "net": "752.50",
+            "vat_raw": "203,18 EUR",
+            "vat": "203.18",
+            "gross_raw": "955,68 EUR",
+            "gross": "955.68"
+          },
+          {
+            "description": "Könyvelési szolgáltatás – Piros projekt, 2026. október",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "676,50 EUR",
+            "unit_price": "676.50",
+            "net_raw": "676,50 EUR",
+            "net": "676.50",
+            "vat_raw": "182,66 EUR",
+            "vat": "182.66",
+            "gross_raw": "859,16 EUR",
+            "gross": "859.16"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés – Piros projekt, 2026. október",
+            "quantity_raw": "3 alkalom",
+            "quantity": "3",
+            "unit": "alkalom",
+            "unit_price_raw": "334,50 EUR",
+            "unit_price": "334.50",
+            "net_raw": "1 003,50 EUR",
+            "net": "1003.50",
+            "vat_raw": "270,95 EUR",
+            "vat": "270.95",
+            "gross_raw": "1 274,45 EUR",
+            "gross": "1274.45"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "D Kft.",
+          "inv_id_ext": "INV/D/2026/03",
+          "currency": "EUR",
+          "net": "2432.50",
+          "gross": "3089.29",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-SARGA-A__INV_A-2026-04",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-SARGA-A.pdf",
+        "number": "TIG-2026-10-SARGA-A",
+        "project": "Sárga",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "A Kft.",
+        "contractor_tax_id": "23456789-2-43",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás",
+            "quantity_raw": "2 alkalom",
+            "quantity": "2",
+            "unit": "alkalom",
+            "unit_price_raw": "59 000 Ft",
+            "unit_price": "59000",
+            "net_raw": "118 000 Ft",
+            "net": "118000"
+          },
+          {
+            "description": "Irodai takarítás",
+            "quantity_raw": "28 óra",
+            "quantity": "28",
+            "unit": "óra",
+            "unit_price_raw": "4 000 Ft",
+            "unit_price": "4000",
+            "net_raw": "112 000 Ft",
+            "net": "112000"
+          },
+          {
+            "description": "Könyvelési szolgáltatás",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "211 000 Ft",
+            "unit_price": "211000",
+            "net_raw": "211 000 Ft",
+            "net": "211000"
+          }
+        ],
+        "total_net_raw": "441 000 Ft",
+        "total_net": "441000",
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV_A-2026-04.pdf",
+        "supplier": "A Kft.",
+        "supplier_tax_id": "23456789-2-43",
+        "supplier_country": "HU",
+        "invoice_number": "INV_A-2026-04",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": true,
+        "net_raw": "441 000 Ft",
+        "net": "441000",
+        "vat_label_raw": null,
+        "vat_raw": null,
+        "vat": null,
+        "gross_label_raw": "Fizetendő összesen",
+        "gross_raw": "441 000 Ft",
+        "gross": "441000",
+        "lines": [
+          {
+            "description": "Munkavédelmi oktatás – Sárga projekt, 2026. október",
+            "quantity_raw": "2 alkalom",
+            "quantity": "2",
+            "unit": "alkalom",
+            "unit_price_raw": "59 000 Ft",
+            "unit_price": "59000",
+            "net_raw": "118 000 Ft",
+            "net": "118000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          },
+          {
+            "description": "Irodai takarítás – Sárga projekt, 2026. október",
+            "quantity_raw": "28 óra",
+            "quantity": "28",
+            "unit": "óra",
+            "unit_price_raw": "4 000 Ft",
+            "unit_price": "4000",
+            "net_raw": "112 000 Ft",
+            "net": "112000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          },
+          {
+            "description": "Könyvelési szolgáltatás – Sárga projekt, 2026. október",
+            "quantity_raw": "1 hó",
+            "quantity": "1",
+            "unit": "hó",
+            "unit_price_raw": "211 000 Ft",
+            "unit_price": "211000",
+            "net_raw": "211 000 Ft",
+            "net": "211000",
+            "vat_raw": null,
+            "vat": null,
+            "gross_raw": null,
+            "gross": null
+          }
+        ],
+        "expected_ledger": {
+          "provider": "A Kft.",
+          "inv_id_ext": "INV_A-2026-04",
+          "currency": "HUF",
+          "net": "441000",
+          "gross": "441000",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-SARGA-C__INV-C-2026-03",
+      "expected_outcome": "mismatch",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-SARGA-C.pdf",
+        "number": "TIG-2026-10-SARGA-C",
+        "project": "Sárga",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "C Kft.",
+        "contractor_tax_id": "45678901-2-06",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Takarítógép-bérlés",
+            "quantity_raw": "6 nap",
+            "quantity": "6",
+            "unit": "nap",
+            "unit_price_raw": "57,00 EUR",
+            "unit_price": "57.00",
+            "net_raw": "342,00 EUR",
+            "net": "342.00"
+          },
+          {
+            "description": "Továbbképzési tréning (kommunikáció)",
+            "quantity_raw": "3 nap",
+            "quantity": "3",
+            "unit": "nap",
+            "unit_price_raw": "420,50 EUR",
+            "unit_price": "420.50",
+            "net_raw": "1 261,50 EUR",
+            "net": "1261.50"
+          }
+        ],
+        "total_net_raw": "1 603,50 EUR",
+        "total_net": "1603.50",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV-C-2026-03.pdf",
+        "supplier": "C Kft.",
+        "supplier_tax_id": "45678901-2-06",
+        "supplier_country": "HU",
+        "invoice_number": "INV-C-2026-03",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "1 660,50 EUR",
+        "net": "1660.50",
+        "vat_label_raw": "ÁFA 27%",
+        "vat_raw": "448,34 EUR",
+        "vat": "448.34",
+        "gross_label_raw": "Fizetendő (bruttó)",
+        "gross_raw": "2 108,84 EUR",
+        "gross": "2108.84",
+        "lines": [
+          {
+            "description": "Takarítógép-bérlés – Sárga projekt, 2026. október",
+            "quantity_raw": "7 nap",
+            "quantity": "7",
+            "unit": "nap",
+            "unit_price_raw": "57,00 EUR",
+            "unit_price": "57.00",
+            "net_raw": "399,00 EUR",
+            "net": "399.00",
+            "vat_raw": "107,73 EUR",
+            "vat": "107.73",
+            "gross_raw": "506,73 EUR",
+            "gross": "506.73"
+          },
+          {
+            "description": "Továbbképzési tréning (kommunikáció) – Sárga projekt, 2026. október",
+            "quantity_raw": "3 nap",
+            "quantity": "3",
+            "unit": "nap",
+            "unit_price_raw": "420,50 EUR",
+            "unit_price": "420.50",
+            "net_raw": "1 261,50 EUR",
+            "net": "1261.50",
+            "vat_raw": "340,61 EUR",
+            "vat": "340.61",
+            "gross_raw": "1 602,11 EUR",
+            "gross": "1602.11"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "C Kft.",
+          "inv_id_ext": "INV-C-2026-03",
+          "currency": "EUR",
+          "net": "1660.50",
+          "gross": "2108.84",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 0,
+          "field": "quantity",
+          "invoice_value": "7",
+          "tig_value": "6",
+          "invoice_raw": "7 nap",
+          "tig_raw": "6 nap"
+        },
+        {
+          "line_index": null,
+          "field": "total_net",
+          "invoice_value": "1660.50",
+          "tig_value": "1603.50",
+          "invoice_raw": "1 660,50 EUR",
+          "tig_raw": "1 603,50 EUR"
+        }
+      ]
+    },
+    {
+      "pair": "TIG-2026-10-ZOLD-B__INV-B_2026_02",
+      "expected_outcome": "match",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-ZOLD-B.pdf",
+        "number": "TIG-2026-10-ZOLD-B",
+        "project": "Zöld",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "B Kft.",
+        "contractor_tax_id": "34567890-2-09",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás",
+            "quantity_raw": "38 óra",
+            "quantity": "38",
+            "unit": "óra",
+            "unit_price_raw": "5 500 Ft",
+            "unit_price": "5500",
+            "net_raw": "209 000 Ft",
+            "net": "209000"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "105 000 Ft",
+            "unit_price": "105000",
+            "net_raw": "105 000 Ft",
+            "net": "105000"
+          },
+          {
+            "description": "Szakmai fordítás",
+            "quantity_raw": "39 oldal",
+            "quantity": "39",
+            "unit": "oldal",
+            "unit_price_raw": "7 000 Ft",
+            "unit_price": "7000",
+            "net_raw": "273 000 Ft",
+            "net": "273000"
+          }
+        ],
+        "total_net_raw": "587 000 Ft",
+        "total_net": "587000",
+        "currency": "HUF"
+      },
+      "invoice": {
+        "file": "INV-B_2026_02.pdf",
+        "supplier": "B Kft.",
+        "supplier_tax_id": "34567890-2-09",
+        "supplier_country": "HU",
+        "invoice_number": "INV-B/2026/02",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "Ft",
+        "currency": "HUF",
+        "vat_exempt_aam": false,
+        "net_raw": "587 000 Ft",
+        "net": "587000",
+        "vat_label_raw": "ÁFA-összesítő 27% / Összesen",
+        "vat_raw": "158 490 Ft",
+        "vat": "158490",
+        "gross_label_raw": "FIZETENDŐ ÖSSZESEN",
+        "gross_raw": "745 490 Ft",
+        "gross": "745490",
+        "lines": [
+          {
+            "description": "Kertgondozás, zöldfelület-karbantartás – Zöld projekt, 2026. október",
+            "quantity_raw": "38 óra",
+            "quantity": "38",
+            "unit": "óra",
+            "unit_price_raw": "5 500 Ft",
+            "unit_price": "5500",
+            "net_raw": "209 000 Ft",
+            "net": "209000",
+            "vat_raw": "56 430 Ft",
+            "vat": "56430",
+            "gross_raw": "265 430 Ft",
+            "gross": "265430"
+          },
+          {
+            "description": "Személyszállítás, buszbérlés – Zöld projekt, 2026. október",
+            "quantity_raw": "1 alkalom",
+            "quantity": "1",
+            "unit": "alkalom",
+            "unit_price_raw": "105 000 Ft",
+            "unit_price": "105000",
+            "net_raw": "105 000 Ft",
+            "net": "105000",
+            "vat_raw": "28 350 Ft",
+            "vat": "28350",
+            "gross_raw": "133 350 Ft",
+            "gross": "133350"
+          },
+          {
+            "description": "Szakmai fordítás – Zöld projekt, 2026. október",
+            "quantity_raw": "39 oldal",
+            "quantity": "39",
+            "unit": "oldal",
+            "unit_price_raw": "7 000 Ft",
+            "unit_price": "7000",
+            "net_raw": "273 000 Ft",
+            "net": "273000",
+            "vat_raw": "73 710 Ft",
+            "vat": "73710",
+            "gross_raw": "346 710 Ft",
+            "gross": "346710"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "B Kft.",
+          "inv_id_ext": "INV-B/2026/02",
+          "currency": "HUF",
+          "net": "587000",
+          "gross": "745490",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": []
+    },
+    {
+      "pair": "TIG-2026-10-ZOLD-D__INV_D_2026_04",
+      "expected_outcome": "mismatch",
+      "tig_kind": "multi_line",
+      "tig": {
+        "file": "TIG-2026-10-ZOLD-D.pdf",
+        "number": "TIG-2026-10-ZOLD-D",
+        "project": "Zöld",
+        "period": "2026. október",
+        "period_range_raw": "2026.10.01. – 2026.10.31.",
+        "contractor": "D Kft.",
+        "contractor_tax_id": "56789012-2-08",
+        "issued_raw": "2026. november 5.",
+        "lines": [
+          {
+            "description": "Továbbképzési tréning (kommunikáció)",
+            "quantity_raw": "4 nap",
+            "quantity": "4",
+            "unit": "nap",
+            "unit_price_raw": "478,00 EUR",
+            "unit_price": "478.00",
+            "net_raw": "1 912,00 EUR",
+            "net": "1912.00"
+          },
+          {
+            "description": "Munkavédelmi oktatás",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "181,50 EUR",
+            "unit_price": "181.50",
+            "net_raw": "907,50 EUR",
+            "net": "907.50"
+          }
+        ],
+        "total_net_raw": "2 819,50 EUR",
+        "total_net": "2819.50",
+        "currency": "EUR"
+      },
+      "invoice": {
+        "file": "INV_D_2026_04.pdf",
+        "supplier": "D Kft.",
+        "supplier_tax_id": "56789012-2-08",
+        "supplier_country": "HU",
+        "invoice_number": "INV/D/2026/04",
+        "issue_date_raw": "2026.11.05.",
+        "supply_date_raw": "2026.11.05.",
+        "due_date_raw": "2026.12.05.",
+        "performance_date_raw": "2026.11.05.",
+        "payment_method_raw": "átutalás",
+        "currency_raw": "EUR",
+        "currency": "EUR",
+        "vat_exempt_aam": false,
+        "net_raw": "2 684,50 EUR",
+        "net": "2684.50",
+        "vat_label_raw": "ÁFA (27%)",
+        "vat_raw": "724,82 EUR",
+        "vat": "724.82",
+        "gross_label_raw": "FIZETENDŐ",
+        "gross_raw": "3 409,32 EUR",
+        "gross": "3409.32",
+        "lines": [
+          {
+            "description": "Továbbképzési tréning (kommunikáció) – Zöld projekt, 2026. október",
+            "quantity_raw": "4 nap",
+            "quantity": "4",
+            "unit": "nap",
+            "unit_price_raw": "478,00 EUR",
+            "unit_price": "478.00",
+            "net_raw": "1 912,00 EUR",
+            "net": "1912.00",
+            "vat_raw": "516,24 EUR",
+            "vat": "516.24",
+            "gross_raw": "2 428,24 EUR",
+            "gross": "2428.24"
+          },
+          {
+            "description": "Munkavédelmi oktatás – Zöld projekt, 2026. október",
+            "quantity_raw": "5 alkalom",
+            "quantity": "5",
+            "unit": "alkalom",
+            "unit_price_raw": "154,50 EUR",
+            "unit_price": "154.50",
+            "net_raw": "772,50 EUR",
+            "net": "772.50",
+            "vat_raw": "208,58 EUR",
+            "vat": "208.58",
+            "gross_raw": "981,08 EUR",
+            "gross": "981.08"
+          }
+        ],
+        "expected_ledger": {
+          "provider": "D Kft.",
+          "inv_id_ext": "INV/D/2026/04",
+          "currency": "EUR",
+          "net": "2684.50",
+          "gross": "3409.32",
+          "due_date": "2026.12.05",
+          "performance_date": "2026.11.05",
+          "yymm": "2611"
+        }
+      },
+      "discrepancies": [
+        {
+          "line_index": 1,
+          "field": "unit_price",
+          "invoice_value": "154.50",
+          "tig_value": "181.50",
+          "invoice_raw": "154,50 EUR",
+          "tig_raw": "181,50 EUR"
+        },
+        {
+          "line_index": null,
+          "field": "total_net",
+          "invoice_value": "2684.50",
+          "tig_value": "2819.50",
+          "invoice_raw": "2 684,50 EUR",
+          "tig_raw": "2 819,50 EUR"
+        }
+      ]
+    }
+  ]
+}
