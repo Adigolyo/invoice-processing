@@ -284,3 +284,9 @@ def test_domestic_invoice_with_foreign_style_stated_date_is_flagged() -> None:
     extraction = InvoiceExtraction(issue_date="2024.03.10", performance_date="02/28/2024")
     dates = normalize_dates(extraction, Origin.DOMESTIC)
     _assert_flagged(select_performance_date(dates, Origin.DOMESTIC))
+
+
+def test_domestic_receipt_without_stated_date_uses_the_issue_date() -> None:
+    # Fallback applied by normalize_dates (project owner decision, 2026-10-03).
+    dates = normalize_dates(InvoiceExtraction(issue_date="2026.09.30 11:44:06"), Origin.DOMESTIC)
+    assert ledger_performance_date(dates, Origin.DOMESTIC) == "2026.09.30"

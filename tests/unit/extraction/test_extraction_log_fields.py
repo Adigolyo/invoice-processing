@@ -38,7 +38,7 @@ def test_complete_extraction_record_is_fully_allowlisted(caplog: pytest.LogCaptu
 
 def test_incomplete_extraction_logs_missing_field_names(caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.DEBUG)
-    extractor, _ = _extractor(claude_message(json.dumps({**PAYLOAD, "due_date": None})))
+    extractor, _ = _extractor(claude_message(json.dumps({**PAYLOAD, "due_date": None, "issue_date": None})))
 
     extractor.extract(INVOICE_A.read_bytes(), "application/pdf")
 

@@ -242,7 +242,10 @@ def test_ac5_unambiguous_formats_do_not_need_origin(raw: str, expected: date) ->
         "2024.03.05.12",  # trailing junk
         "2024-03/05",  # mixed separators
         "0024.03.05",  # implausible year
-        "2024-03-05T10:00:00",  # timestamps are not accepted silently
+        "2024.03.05 25:00",  # not a time of day
+        "2024.03.05 10:61",
+        "2024.03.05 10",  # hour without minutes
+        "2024.03.05 10:00 ma",  # trailing junk after the time
     ],
 )
 def test_ac5_unparseable_values_are_flagged_never_defaulted(
@@ -296,7 +299,8 @@ def test_ac6_one_bad_field_does_not_block_the_others() -> None:
     dates = normalize_dates(extraction, Origin.US)
     assert dates.issue_date == date(2024, 3, 1)
     assert dates.supply_date == date(2024, 3, 5)
-    assert dates.performance_date is None  # not extracted: nothing to normalise, not a failure
+    # Not extracted: not a failure; the issue date stands in for it.
+    assert dates.performance_date == date(2024, 3, 1)
     assert isinstance(dates.due_date, NormalizationFailure)
     assert dates.due_date.field == "due_date"
     assert dates.failures == (dates.due_date,)
@@ -337,3 +341,60 @@ def test_normalized_dates_formatted_view_for_the_ledger() -> None:
         "supply_date": None,
         "performance_date": "2024.03.05",
     }
+
+
+# --- A trailing time of day is ignored ------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "2026.09.23 08:03:15",
+        "2026.09.23. 08:03",
+        "2026. 09. 23. 8:03",
+        "2026-09-23T08:03:15",
+        "2026. szeptember 23. 08:03:15",
+    ],
+)
+def test_a_trailing_time_of_day_is_ignored(raw: str) -> None:
+    assert normalize_date(raw, Origin.DOMESTIC) == date(2026, 9, 23)
+
+
+def test_a_trailing_time_keeps_the_origin_rule_for_day_month_order() -> None:
+    assert normalize_date("23/09/2026 08:03", Origin.OTHER_FOREIGN) == date(2026, 9, 23)
+    _assert_flagged(normalize_date("23/09/2026 08:03", Origin.DOMESTIC))
+
+
+# --- Missing due/performance date falls back to the issue date ---------------------
+# Receipts paid on the spot print neither (decision of the project owner, 2026-10-03).
+
+
+def test_missing_due_and_performance_date_fall_back_to_the_issue_date() -> None:
+    dates = normalize_dates(InvoiceExtraction(issue_date="2026.09.23 08:03:15"), Origin.DOMESTIC)
+    assert dates == NormalizedDates(
+        issue_date=date(2026, 9, 23),
+        due_date=date(2026, 9, 23),
+        performance_date=date(2026, 9, 23),
+    )
+
+
+def test_printed_dates_win_over_the_issue_date_fallback() -> None:
+    extraction = InvoiceExtraction(
+        issue_date="2026.09.23", due_date="2026.10.23", performance_date="2026.09.20"
+    )
+    dates = normalize_dates(extraction, Origin.DOMESTIC)
+    assert (dates.due_date, dates.performance_date) == (date(2026, 10, 23), date(2026, 9, 20))
+
+
+def test_an_unparseable_printed_due_date_is_flagged_not_replaced() -> None:
+    extraction = InvoiceExtraction(issue_date="2026.09.23", due_date="garbage")
+    dates = normalize_dates(extraction, Origin.DOMESTIC)
+    assert isinstance(dates.due_date, NormalizationFailure)
+    assert dates.due_date.field == "due_date"
+
+
+@pytest.mark.parametrize("issue", [None, "garbage"])
+def test_no_fallback_without_a_usable_issue_date(issue: str | None) -> None:
+    dates = normalize_dates(InvoiceExtraction(issue_date=issue), Origin.DOMESTIC)
+    assert dates.due_date is None
+    assert dates.performance_date is None

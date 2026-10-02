@@ -354,7 +354,7 @@ def test_ac4_missing_required_field_is_none_and_flagged_incomplete(
 
 
 def test_ac4_illegible_due_date_returned_blank_is_treated_as_missing(backend: Backend) -> None:
-    extractor, _ = _extractor(backend, _ok(_payload(due_date="   ")))
+    extractor, _ = _extractor(backend, _ok(_payload(due_date="   ", issue_date=None)))
 
     result = extractor.extract(INVOICE_A.read_bytes(), "application/pdf")
 
@@ -364,7 +364,7 @@ def test_ac4_illegible_due_date_returned_blank_is_treated_as_missing(backend: Ba
 
 
 def test_ac4_several_missing_fields_are_all_named(backend: Backend) -> None:
-    extractor, _ = _extractor(backend, _ok(_payload(net=None, due_date=None)))
+    extractor, _ = _extractor(backend, _ok(_payload(net=None, due_date=None, issue_date=None)))
 
     result = extractor.extract(INVOICE_A.read_bytes(), "application/pdf")
 
@@ -516,7 +516,7 @@ def _all_logged_text(caplog: pytest.LogCaptureFixture) -> str:
 
 @pytest.mark.parametrize(
     "text",
-    [_ok(_payload()), _ok(_payload(due_date=None)), "garbage A Kft. 72 000 Ft"],
+    [_ok(_payload()), _ok(_payload(due_date=None, issue_date=None)), "garbage A Kft. 72 000 Ft"],
 )
 def test_logs_never_contain_document_content_or_the_key(
     backend: Backend,
@@ -535,3 +535,22 @@ def test_logs_never_contain_document_content_or_the_key(
     for secret in (API_KEY, "A Kft.", "72 000", "INV_A-2026-01", "2026.11.04."):
         assert secret not in logged
     assert API_KEY not in repr(extractor)
+
+
+def test_missing_due_date_is_not_flagged_when_an_issue_date_is_printed(backend: Backend) -> None:
+    # Receipts paid on the spot print no due date; the issue date stands in for it.
+    extractor, _ = _extractor(backend, _ok(_payload(due_date=None)))
+
+    result = extractor.extract(INVOICE_A.read_bytes(), "application/pdf")
+
+    assert result.status is StageStatus.OK
+    assert result.value is not None and result.value.due_date is None
+
+
+def test_missing_due_and_issue_date_flags_the_due_date(backend: Backend) -> None:
+    extractor, _ = _extractor(backend, _ok(_payload(due_date=None, issue_date=None)))
+
+    result = extractor.extract(INVOICE_A.read_bytes(), "application/pdf")
+
+    assert result.status is StageStatus.INCOMPLETE
+    assert result.detail is not None and "due_date" in result.detail

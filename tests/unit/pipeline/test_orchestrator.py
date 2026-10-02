@@ -664,3 +664,18 @@ def test_stage_logs_carry_no_financial_content(caplog: pytest.LogCaptureFixture)
     text = caplog.text + " ".join(str(r.__dict__) for r in stage_records)
     for secret in ("100 000", "100000", "80 000", "127 000", "INV-1", "Kővári", "Fejlesztés"):
         assert secret not in text
+
+
+def test_receipt_without_due_or_performance_date_is_booked_with_the_issue_date() -> None:
+    h = Harness()
+    h.direct_invoice(
+        answer=ok(
+            invoice_extraction(
+                issue_date="2026.09.23 08:03:15", due_date=None, performance_date=None
+            )
+        )
+    )
+
+    assert _counts(h.run()) == {"processed": 1}
+    (row,) = h.sheets.rows
+    assert row.due_date == date(2026, 9, 23)
