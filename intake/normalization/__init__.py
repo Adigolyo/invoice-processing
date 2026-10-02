@@ -8,6 +8,10 @@ from intake.normalization.dates import (
     normalize_date,
     normalize_dates,
 )
+from intake.normalization.performance_date import (
+    ledger_performance_date,
+    select_performance_date,
+)
 from intake.normalization.result import NormalizationFailure
 
 __all__ = [
@@ -17,6 +21,8 @@ __all__ = [
     "Origin",
     "determine_origin",
     "format_ledger_date",
+    "ledger_performance_date",
     "normalize_date",
     "normalize_dates",
+    "select_performance_date",
 ]
