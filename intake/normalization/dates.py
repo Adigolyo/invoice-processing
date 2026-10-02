@@ -12,8 +12,16 @@ Supported inputs (whitespace and case are ignored, a trailing ``.`` is allowed):
   invoices use year-first dates, so this pattern on a domestic invoice is flagged, and
   with an unknown origin it is always flagged, even when only one reading is valid.
 
-Everything else (two-digit years, impossible calendar days, timestamps, mixed
-separators, free text) returns a ``NormalizationFailure``; nothing is ever defaulted.
+A trailing time of day (``2026.09.23 08:03:15``, ``2026-09-23T08:03``) is dropped
+before parsing: receipts print the moment of sale, and only the day matters here.
+
+Everything else (two-digit years, impossible calendar days, invalid times, mixed
+separators, free text) returns a ``NormalizationFailure``.
+
+``normalize_dates`` applies one fallback: a due date or performance date that was not
+printed at all takes the issue date. Receipts paid on the spot print neither (project
+owner decision, 2026-10-03). A printed but unparseable date is still flagged, never
+replaced.
 """
 
 from __future__ import annotations
@@ -42,6 +50,10 @@ _ORDINAL = r"(?:st|nd|rd|th)?"
 _TEXT_YEAR_FIRST = re.compile(rf"^(\d{{4}})\.?\s*{_WORD}\.?\s*(\d{{1,2}})\.?$")
 _TEXT_MONTH_FIRST = re.compile(rf"^{_WORD}\.?\s*(\d{{1,2}}){_ORDINAL},?\s+(\d{{4}})\.?$")
 _TEXT_DAY_FIRST = re.compile(rf"^(\d{{1,2}}){_ORDINAL}\.?\s*{_WORD}\.?,?\s+(\d{{4}})\.?$")
+_TIME_SUFFIX = re.compile(r"(?:\s+|T)(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$")
+
+# Not printed on receipts paid on the spot; the issue date stands in for them.
+ISSUE_DATE_FALLBACK_FIELDS: Final = ("due_date", "performance_date")
 
 # Keys are accent-stripped and case-folded (see ``_fold``).
 _MONTHS: Final[dict[str, int]] = {
@@ -133,7 +145,7 @@ def normalize_date(raw: str | None, origin: Origin) -> date | NormalizationFailu
     """Parse one extracted date under the rule for ``origin``; flag, never guess."""
     if raw is None or not raw.strip():
         return NormalizationFailure("date is missing")
-    text = re.sub(r"\s+", " ", raw).strip()
+    text = _TIME_SUFFIX.sub("", re.sub(r"\s+", " ", raw).strip())
 
     if match := _YEAR_FIRST.match(text):
         year, _sep, month, day = match.groups()
@@ -190,7 +202,11 @@ class NormalizedDates:
 
 
 def normalize_dates(extraction: InvoiceExtraction, origin: Origin) -> NormalizedDates:
-    """Normalise every date field independently with the same rule set."""
+    """Normalise every date field independently with the same rule set.
+
+    A due or performance date that was not extracted takes the issue date, when that
+    is usable (see the module docstring).
+    """
     values: dict[str, DateValue] = {}
     for name in DATE_FIELDS:
         raw: str | None = getattr(extraction, name)
@@ -201,11 +217,17 @@ def normalize_dates(extraction: InvoiceExtraction, origin: Origin) -> Normalized
         if isinstance(result, NormalizationFailure):
             result = dataclasses.replace(result, field=name)
         values[name] = result
+    issue = values["issue_date"]
+    if isinstance(issue, date):
+        for name in ISSUE_DATE_FALLBACK_FIELDS:
+            if values[name] is None:
+                values[name] = issue
     return NormalizedDates(**values)
 
 
 __all__ = [
     "DATE_FIELDS",
+    "ISSUE_DATE_FALLBACK_FIELDS",
     "NormalizedDates",
     "format_ledger_date",
     "normalize_date",

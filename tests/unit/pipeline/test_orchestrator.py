@@ -312,7 +312,7 @@ def test_unsupported_document_needs_review() -> None:
         {"net": "1.2.3,4,5"},
         {"gross": "abc"},
         {"due_date": "2026.13.45."},
-        {"performance_date": None},
+        {"performance_date": None, "issue_date": None},
         {"supplier_country": None},
     ],
     ids=["currency", "net", "gross", "due-date", "no-performance-date", "unknown-origin"],

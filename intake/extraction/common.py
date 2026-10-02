@@ -70,15 +70,16 @@ HEADER_FIELDS: Final = (
 LINE_ITEM_FIELDS: Final = ("description", "quantity", "unit_price", "net")
 
 # USR-002-01 AC1 core fields. The performance date is not required here: foreign
-# invoices often print none and USR-002-04 picks the earliest of issue/due/supply; a
-# domestic invoice without one is flagged by ``select_performance_date``.
+# invoices often print none and USR-002-04 picks the earliest of issue/due/supply.
+# The due date is required too, but an issue date satisfies it: receipts paid on the
+# spot print no due date, and normalisation then uses the issue date (project owner
+# decision, 2026-10-03).
 INVOICE_REQUIRED_FIELDS: Final = (
     "supplier",
     "invoice_number",
     "currency",
     "net",
     "gross",
-    "due_date",
 )
 
 
@@ -385,7 +386,10 @@ def missing_required(extraction: InvoiceExtraction, kind: DocumentKind) -> list[
     """Required fields that are ``None`` (a TIG needs at least one line item)."""
     if kind is DocumentKind.TIG:
         return [] if extraction.line_items else ["line_items"]
-    return [name for name in INVOICE_REQUIRED_FIELDS if getattr(extraction, name) is None]
+    missing = [name for name in INVOICE_REQUIRED_FIELDS if getattr(extraction, name) is None]
+    if extraction.due_date is None and extraction.issue_date is None:
+        missing.append("due_date")
+    return missing
 
 
 # --- result contract --------------------------------------------------------------------
