@@ -13,7 +13,8 @@ it to Gmail's label ID. The specification does not say the service should create
 so a name that does not exist in the mailbox raises ``GmailLabelNotFoundError``; the four
 Kibit labels must be created once during mailbox setup.
 
-Only ``intake/pipeline/orchestrator.py`` may call ``apply_label`` and ``mark_read``.
+Only ``intake/pipeline/orchestrator.py`` may call ``apply_label``, ``remove_label`` and
+``mark_read``.
 """
 
 from __future__ import annotations
@@ -32,6 +33,7 @@ GmailResource = Any
 
 UNREAD_LABEL_ID = "UNREAD"
 SENT_LABEL_ID = "SENT"
+DRAFT_LABEL_ID = "DRAFT"
 
 
 class GmailResponseError(RuntimeError):
@@ -218,6 +220,15 @@ class GmailClient:
         label_id = self._resolve_label_id(label)
         self._modify(message_id, {"addLabelIds": [label_id]})
 
+    def remove_label(self, message_id: str, label: str) -> None:
+        """Remove the label called ``label`` from a message (idempotent in Gmail).
+
+        Resolved by name like ``apply_label``; an unknown name raises
+        ``GmailLabelNotFoundError`` before any change.
+        """
+        label_id = self._resolve_label_id(label)
+        self._modify(message_id, {"removeLabelIds": [label_id]})
+
     def mark_read(self, message_id: str) -> None:
         self._modify(message_id, {"removeLabelIds": [UNREAD_LABEL_ID]})
 
@@ -225,11 +236,12 @@ class GmailClient:
         """Create (never send) a plain-text draft replying to the thread; returns the draft ID.
 
         The reply goes to the ``From`` of the latest message in the thread that the mailbox
-        did not send itself, with ``Re:`` subject and ``In-Reply-To``/``References`` set so
-        Gmail threads it.
+        did not send itself and that is not a draft (``SENT``/``DRAFT`` labels), with
+        ``Re:`` subject and ``In-Reply-To``/``References`` set so Gmail threads it.
         """
         thread = self.get_thread(thread_id)
-        inbound = [m for m in thread.messages if SENT_LABEL_ID not in m.label_names]
+        own = {SENT_LABEL_ID, DRAFT_LABEL_ID}
+        inbound = [m for m in thread.messages if own.isdisjoint(m.label_names)]
         if not inbound:
             raise GmailReplyError(f"thread {thread_id} has no inbound message to reply to")
         target = inbound[-1]

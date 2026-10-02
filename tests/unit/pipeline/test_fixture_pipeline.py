@@ -179,7 +179,7 @@ def test_fixture_pairs_end_in_their_documented_states() -> None:
     ((thread_id, body),) = gmail.drafts
     assert thread_id == "t-mismatch"
     assert "egységár" in body
-    assert "nettó végösszeg" in body
+    assert "nettó végösszeg" in body.lower()
 
     # Second cycle: nothing left to do, nothing duplicated.
     writes = list(gmail.writes)

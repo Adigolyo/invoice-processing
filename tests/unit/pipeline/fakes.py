@@ -74,6 +74,7 @@ class _Failing:
     """``fail``: method -> exception raised on every call; ``fail_once``: on the next call."""
 
     def __init__(self) -> None:
+        self.fail: dict[str, BaseException] = {}
         self.fail_once: dict[str, BaseException] = {}
 
     def _check(self, method: str) -> None:

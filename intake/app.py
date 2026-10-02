@@ -1,9 +1,12 @@
-"""Cloud Run HTTP entrypoint (Task 3 skeleton).
+"""Cloud Run HTTP entrypoint.
 
 - ``GET /healthz``: unauthenticated liveness check, no data and no side effects.
 - ``POST /run``: accepts only a Google-signed OIDC token minted for the Cloud Scheduler
-  service account, with the configured audience. Returns a stub summary for now; Task 21/22
-  wire the pipeline orchestrator in here.
+  service account, with the configured audience, then runs one full polling cycle
+  (``intake.pipeline.runtime.run_from_env``) and returns its summary:
+  ``{"status": "ok", "summary": {"processed", "pending", "needs_review",
+  "awaiting_tig", "errors", "skipped"}}``. A run that fails before processing candidates
+  (Config, Ledger header, credentials, polling) answers 500 with only the error type.
 
 Served by gunicorn (see ``Dockerfile``): ``gunicorn intake.app:app``.
 """
@@ -19,6 +22,9 @@ from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 
+from intake.pipeline.orchestrator import RunSummary
+from intake.pipeline.runtime import run_from_env
+
 logger = logging.getLogger(__name__)
 
 AUDIENCE_ENV = "OIDC_AUDIENCE"
@@ -26,6 +32,9 @@ SCHEDULER_EMAIL_ENV = "SCHEDULER_SERVICE_ACCOUNT_EMAIL"
 
 TokenVerifier = Callable[[str, str], Mapping[str, Any]]
 """Verifies an OIDC token for an audience and returns its claims; raises if invalid."""
+
+PipelineRunner = Callable[[], RunSummary]
+"""Runs one polling cycle and returns its summary."""
 
 
 @dataclass(frozen=True)
@@ -96,11 +105,22 @@ def _unauthorized() -> tuple[Response, int]:
 
 
 def create_app(
-    verifier: TokenVerifier | None = None, env: Mapping[str, str] | None = None
+    verifier: TokenVerifier | None = None,
+    env: Mapping[str, str] | None = None,
+    runner: PipelineRunner | None = None,
 ) -> Flask:
-    """Build the WSGI app. ``verifier`` and ``env`` are injectable for tests."""
-    settings = oidc_settings_from_env(os.environ if env is None else env)
+    """Build the WSGI app. ``verifier``, ``env`` and ``runner`` are injectable for tests.
+
+    The default ``runner`` builds the real clients from ``env`` on every request.
+    """
+    environment = os.environ if env is None else env
+    settings = oidc_settings_from_env(environment)
     verify = verifier or verify_google_oidc_token
+
+    def default_runner() -> RunSummary:
+        return run_from_env(environment)
+
+    run_pipeline = runner or default_runner
     app = Flask(__name__)
 
     @app.get("/healthz")
@@ -111,10 +131,14 @@ def create_app(
     def run() -> tuple[Response, int]:
         if not is_authorized(request.headers.get("Authorization"), settings, verify):
             return _unauthorized()
-        # Stub until the orchestrator lands (Tasks 21/22): no pipeline logic yet.
-        summary = {"processed": 0, "pending": 0, "needs_review": 0, "awaiting_tig": 0, "errors": 0}
-        logger.info("POST /run accepted (stub)", extra={"summary": summary})
-        return jsonify({"status": "stub", "summary": summary}), 200
+        try:
+            summary = run_pipeline().to_dict()
+        except Exception as exc:
+            # Only the type: messages may carry sheet/document values.
+            logger.error("POST /run failed", extra={"error_type": type(exc).__name__})
+            return jsonify({"status": "error", "error": type(exc).__name__}), 500
+        logger.info("POST /run completed", extra={"summary": summary})
+        return jsonify({"status": "ok", "summary": summary}), 200
 
     return app
 
