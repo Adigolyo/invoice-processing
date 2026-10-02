@@ -103,7 +103,7 @@ def test_contractor_sender_wins_regardless_of_subject(config: Config, subject: s
         "x@notbuildco.example",
         "x@buildco.example.evil",
         # The identifier appearing only in the display name is not a sender match.
-        "dev@contractor.example <scam@phish.example>",
+        '"dev@contractor.example" <scam@phish.example>',
     ],
 )
 def test_non_contractor_sender_routes_direct(config: Config, sender: str) -> None:
@@ -111,6 +111,15 @@ def test_non_contractor_sender_routes_direct(config: Config, sender: str) -> Non
 
     assert decision.route is Route.DIRECT
     assert decision.matched_on == "sender"
+
+
+def test_contractor_identifier_in_malformed_header_never_routes_tig(config: Config) -> None:
+    # An unquoted "@" in the display name makes the header malformed: the sender is
+    # inconclusive, so the subject decides; the display name is never a contractor match.
+    decision = classify("dev@contractor.example <scam@phish.example>", "Számla", config)
+
+    assert decision.route is Route.DIRECT
+    assert decision.matched_on == "subject"
 
 
 def test_non_contractor_sender_routes_direct_even_with_tig_indicator_in_subject(
