@@ -40,6 +40,6 @@
 - **Test command:** `pytest tests/unit`. Unit tests are hermetic, with mocked clients and
   Gemini. CI requires 85% coverage.
 - **Lint/format command:** `ruff check .`, `ruff format --check .` and `mypy intake/`. Use `ruff format .` to fix formatting.
-- **Run command:** TODO, since the specification doesn't give a local run command.
+- **Run command:** `python -m intake` runs one cycle locally (`python -m intake --authorize` once first). Deployed: `POST /run` on Cloud Run.
 - **Branching:** each task uses the source and target branches given in the execution
   plan (`execution-plan-invoice-processing-kibit.md`).
