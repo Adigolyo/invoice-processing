@@ -402,3 +402,60 @@ def test_blank_extracted_field_is_a_failure() -> None:
     result = normalize_amounts(InvoiceExtraction(net="  ", gross="100"))
     assert isinstance(result.net, NormalizationFailure)
     assert result.net.field == "net"
+
+
+# --- HUF has no fractional part: a lone separator before 3 digits is thousands ---
+# Business rule (2026-10-02): "1.234 Ft" means 1234 forint. Resolves the AC5 ambiguity
+# for HUF only; every other (or an unknown) currency is still flagged.
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("1.234", "1234"),
+        ("1,234", "1234"),
+        ("12.345", "12345"),
+        ("999,000", "999000"),
+        ("1.234 Ft", "1234"),
+        ("Ft 1.234", "1234"),
+        ("HUF1,234", "1234"),
+        ("-1.234 Ft", "-1234"),
+    ],
+)
+def test_huf_single_separator_before_three_digits_is_thousands(raw: str, expected: str) -> None:
+    _assert_amount(normalize_amount(raw, currency_iso="HUF"), expected)
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("1.234,56", "1234.56"),
+        ("HUF29,299.20", "29299.20"),
+        ("1234,5", "1234.5"),
+        ("1,23", "1.23"),
+        ("1 234", "1234"),
+        ("1.234.567", "1234567"),
+    ],
+)
+def test_huf_unambiguous_amounts_parse_as_before(raw: str, expected: str) -> None:
+    _assert_amount(normalize_amount(raw, currency_iso="HUF"), expected)
+
+
+@pytest.mark.parametrize("currency_iso", [None, "EUR", "USD", "", "huf", "Ft"])
+@pytest.mark.parametrize("raw", ["1.234", "1,234", "$1,234"])
+def test_non_huf_or_unresolved_currency_keeps_ambiguity_flag(
+    raw: str, currency_iso: str | None
+) -> None:
+    failure = _assert_flagged(normalize_amount(raw, currency_iso=currency_iso))
+    assert "ambiguous" in failure.detail
+
+
+def test_normalize_amounts_passes_currency_to_each_field() -> None:
+    extraction = InvoiceExtraction(net="1.234 Ft", gross="1.567")
+    huf = normalize_amounts(extraction, currency_iso="HUF")
+    assert huf.net == Decimal("1234")
+    assert huf.gross == Decimal("1567")
+
+    eur = normalize_amounts(extraction, currency_iso="EUR")
+    assert isinstance(eur.net, NormalizationFailure) and eur.net.field == "net"
+    assert isinstance(eur.gross, NormalizationFailure) and eur.gross.field == "gross"
