@@ -90,7 +90,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 **Test and lint:**
 
 ```bash
-ruff check . && mypy intake/
+ruff check . && ruff format --check . && mypy intake/
 pytest tests/unit
 ```
 

@@ -1,0 +1,9 @@
+target-version = "py312"
+line-length = 100
+extend-exclude = ["docs"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[format]
+quote-style = "double"

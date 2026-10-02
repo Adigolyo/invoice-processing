@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kibit-invoice-intake"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+description = "Automated invoice intake: Gmail -> Gemini extraction -> Drive filing -> Sheets ledger"
+requires-python = ">=3.12"
+
+[tool.setuptools.dynamic]
+version = { attr = "intake.__version__" }
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies = { dev = { file = ["requirements-dev.txt"] } }
+
+[tool.setuptools.packages.find]
+include = ["intake*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["live: calls real external APIs (Gemini, sandbox Workspace)"]
+
+[tool.coverage.run]
+source = ["intake"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true

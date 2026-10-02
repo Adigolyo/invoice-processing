@@ -27,12 +27,19 @@
   - `observability/`
   - `config.py`, `models.py`, `app.py`
 
-  Tests live under `tests/`, and infrastructure under `infra/` (Terraform).
+  Tests are split three ways:
+  - `tests/unit/<area>/`, mirroring the `intake/` package
+  - `tests/integration/`
+  - `tests/e2e/fixture_set/`
+
+  Infrastructure lives under `infra/` (Terraform). Dependencies are pinned in
+  `requirements.txt` / `requirements-dev.txt`, and tool config is in `pyproject.toml` and
+  `.ruff.toml`.
 - **Invariant:** only `intake/pipeline/orchestrator.py` may call `apply_label`,
   `mark_read` or `append_row`.
 - **Test command:** `pytest tests/unit`. Unit tests are hermetic, with mocked clients and
   Gemini. CI requires 85% coverage.
-- **Lint/format command:** `ruff check .` and `mypy intake/`.
+- **Lint/format command:** `ruff check .`, `ruff format --check .` and `mypy intake/`. Use `ruff format .` to fix formatting.
 - **Run command:** TODO, since the specification doesn't give a local run command.
 - **Branching:** each task uses the source and target branches given in the execution
   plan (`execution-plan-invoice-processing-kibit.md`).
