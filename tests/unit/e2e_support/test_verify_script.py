@@ -72,3 +72,25 @@ def test_results_without_a_first_run_fail(tmp_path: Path) -> None:
 def test_spreadsheet_needs_folder() -> None:
     with pytest.raises(SystemExit):
         script.main(["--spreadsheet", "abc"])
+
+
+# --- release gate: a gate without a run must fail ---------------------------------------
+
+
+def test_require_run_fails_without_a_run(capsys: pytest.CaptureFixture[str]) -> None:
+    assert script.main(["--strict", "--require-run"]) == 1
+    assert "no E2E run to verify" in capsys.readouterr().out
+
+
+def test_require_run_fails_without_a_second_run(tmp_path: Path) -> None:
+    path = tmp_path / "one-run.json"
+    path.write_text(json.dumps({"run1": perfect_snapshot()}), encoding="utf-8")
+    assert script.main(["--strict", "--require-run", "--results", str(path)]) == 1
+
+
+def test_require_run_passes_a_complete_correct_run(tmp_path: Path) -> None:
+    first = perfect_snapshot()
+    second = copy.deepcopy(first)
+    second["summary"] = {"candidates": []}
+    path = _results(tmp_path, first, second)
+    assert script.main(["--strict", "--require-run", "--results", str(path)]) == 0
