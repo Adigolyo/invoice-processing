@@ -27,3 +27,10 @@ source = ["intake"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+[[tool.mypy.overrides]]
+# google-api-python-client ships no type information (no py.typed, no stubs package).
+# Scoped to that package only; its resources are typed as explicit ``Any`` aliases in
+# intake/clients/*_client.py and every response is shape-checked at runtime.
+module = ["googleapiclient", "googleapiclient.*"]
+ignore_missing_imports = true
