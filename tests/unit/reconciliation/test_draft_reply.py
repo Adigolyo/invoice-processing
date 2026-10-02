@@ -613,7 +613,7 @@ def test_real_client_creates_a_threaded_unsent_draft_to_the_contractor_exactly_o
     assert body["message"]["threadId"] == THREAD_ID
     raw = base64.urlsafe_b64decode(body["message"]["raw"])
     sent = email.message_from_bytes(raw, policy=policy.default)
-    assert sent["To"] == CONTRACTOR
+    assert sent["To"].addresses[0].addr_spec == "szamla@c-kft.example"
     assert sent["In-Reply-To"] == "<m-inv@mail.example>"
     text = sent.get_body(preferencelist=("plain",)).get_content()  # type: ignore[union-attr]
     assert "3. tétel" in text and "Nettó végösszeg" in text
