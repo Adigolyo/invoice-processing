@@ -235,6 +235,13 @@ def test_raw_or_unresolved_currency_is_refused(raw_currency: str) -> None:
     assert "Currency" in info.value.columns
 
 
+def test_non_text_currency_is_refused() -> None:
+    with pytest.raises(BookingError) as info:
+        _build(currency=348)  # HUF's numeric ISO code is still not the ledger form
+
+    assert info.value.columns == ("Currency",)
+
+
 def test_unrecognised_iso_shaped_currency_is_refused() -> None:
     with pytest.raises(BookingError) as info:
         _build(currency="ABC")
