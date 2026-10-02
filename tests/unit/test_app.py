@@ -1,6 +1,7 @@
-"""Task 3: Cloud Run HTTP skeleton — /healthz and the OIDC-protected /run stub.
+"""Cloud Run HTTP entrypoint — /healthz and the OIDC-protected /run (Tasks 3, 21).
 
-OIDC verification is mocked via the injectable ``verifier``; no network calls.
+OIDC verification is mocked via the injectable ``verifier`` and the pipeline run via the
+injectable ``runner``; no network calls.
 """
 
 from collections.abc import Mapping
@@ -11,6 +12,7 @@ from flask.testing import FlaskClient
 from google.auth.exceptions import TransportError
 
 from intake import app as app_module
+from intake.pipeline.orchestrator import CandidateResult, CandidateStatus, RunSummary
 
 AUDIENCE = "https://kibit-intake-staging-abc123-ew.a.run.app"
 SCHEDULER_SA = "kibit-scheduler-staging@kibit-invoice-intake.iam.gserviceaccount.com"
@@ -33,8 +35,25 @@ class FakeVerifier:
         return self.claims
 
 
-def _client(verifier: FakeVerifier, env: Mapping[str, str] = ENV) -> FlaskClient:
-    return app_module.create_app(verifier=verifier, env=env).test_client()
+class FakeRunner:
+    def __init__(self, summary: RunSummary | None = None, error: Exception | None = None):
+        self.summary = summary or RunSummary(())
+        self.error = error
+        self.calls = 0
+
+    def __call__(self) -> RunSummary:
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return self.summary
+
+
+def _client(
+    verifier: FakeVerifier, env: Mapping[str, str] = ENV, runner: FakeRunner | None = None
+) -> FlaskClient:
+    return app_module.create_app(
+        verifier=verifier, env=env, runner=runner or FakeRunner()
+    ).test_client()
 
 
 # --- /healthz ---------------------------------------------------------------------------
@@ -116,22 +135,71 @@ def test_run_rejects_get() -> None:
 # --- /run: accepted path ----------------------------------------------------------------
 
 
-def test_run_with_valid_scheduler_token_returns_stub_summary() -> None:
+def test_run_with_valid_scheduler_token_runs_one_cycle_and_returns_its_summary() -> None:
     verifier = FakeVerifier()
-    response = _client(verifier).post("/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"})
+    runner = FakeRunner(
+        RunSummary(
+            (
+                CandidateResult("m1", CandidateStatus.PROCESSED, "ok"),
+                CandidateResult("m2", CandidateStatus.PENDING, "ok"),
+                CandidateResult("m3", CandidateStatus.ERROR, "HttpError"),
+            )
+        )
+    )
+    response = _client(verifier, runner=runner).post(
+        "/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"}
+    )
 
     assert response.status_code == 200
     body = response.get_json()
-    assert body["status"] == "stub"
+    assert body["status"] == "ok"
     assert body["summary"] == {
-        "processed": 0,
-        "pending": 0,
+        "processed": 1,
+        "pending": 1,
         "needs_review": 0,
         "awaiting_tig": 0,
-        "errors": 0,
+        "errors": 1,
+        "skipped": 0,
     }
+    assert runner.calls == 1
     # The token is verified against the configured audience.
     assert verifier.calls == [(VALID_TOKEN, AUDIENCE)]
+
+
+def test_unauthorized_run_never_starts_the_pipeline() -> None:
+    runner = FakeRunner()
+    response = _client(FakeVerifier(error=ValueError("bad")), runner=runner).post(
+        "/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"}
+    )
+    assert response.status_code == 401
+    assert runner.calls == 0
+
+
+def test_run_failure_returns_500_with_only_the_error_type() -> None:
+    runner = FakeRunner(error=RuntimeError("Ledger header is wrong: 12345 Ft"))
+    response = _client(FakeVerifier(), runner=runner).post(
+        "/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"}
+    )
+    assert response.status_code == 500
+    assert response.get_json() == {"status": "error", "error": "RuntimeError"}
+
+
+def test_default_runner_runs_the_pipeline_from_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: list[Mapping[str, str]] = []
+
+    def fake_run_from_env(env: Mapping[str, str]) -> RunSummary:
+        seen.append(env)
+        return RunSummary(())
+
+    monkeypatch.setattr(app_module, "run_from_env", fake_run_from_env)
+    client = app_module.create_app(verifier=FakeVerifier(), env=ENV).test_client()
+
+    response = client.post("/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"})
+
+    assert response.status_code == 200
+    assert seen == [ENV]
 
 
 def test_run_matches_service_account_email_case_insensitively() -> None:
@@ -179,6 +247,7 @@ def test_create_app_defaults_to_process_environment(monkeypatch: pytest.MonkeyPa
         "verify_oauth2_token",
         lambda token, request, audience=None: {"email": SCHEDULER_SA, "email_verified": True},
     )
+    monkeypatch.setattr(app_module, "run_from_env", lambda env: RunSummary(()))
     client = app_module.create_app().test_client()
     response = client.post("/run", headers={"Authorization": f"Bearer {VALID_TOKEN}"})
     assert response.status_code == 200

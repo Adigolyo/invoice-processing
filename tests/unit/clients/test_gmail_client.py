@@ -491,6 +491,34 @@ def test_apply_label_raises_on_label_list_api_error() -> None:
         fake.client().apply_label("m1", "Kibit/Processed")
 
 
+def test_remove_label_resolves_name_to_id() -> None:
+    fake = FakeGmail()
+
+    fake.client().remove_label("m1", "Kibit/AwaitingTIG")
+
+    assert fake.modify_calls == [
+        {"userId": "me", "id": "m1", "body": {"removeLabelIds": ["Label_4"]}}
+    ]
+
+
+def test_remove_label_raises_for_unknown_label_and_does_not_modify() -> None:
+    fake = FakeGmail()
+
+    with pytest.raises(GmailLabelNotFoundError, match="Kibit/Missing"):
+        fake.client().remove_label("m1", "Kibit/Missing")
+
+    fake.messages.modify.assert_not_called()
+
+
+def test_remove_label_raises_on_modify_api_error() -> None:
+    fake = FakeGmail()
+    fake.messages.modify.side_effect = None
+    fake.messages.modify.return_value = _request(error=_http_error(500))
+
+    with pytest.raises(HttpError):
+        fake.client().remove_label("m1", "Kibit/AwaitingTIG")
+
+
 def test_mark_read_removes_unread_label() -> None:
     fake = FakeGmail()
 
@@ -584,6 +612,39 @@ def test_create_draft_reply_keeps_non_ascii_body_and_subject() -> None:
 def test_create_draft_reply_raises_when_thread_has_no_inbound_message() -> None:
     fake = FakeGmail()
     fake.threads.get.return_value = _thread_for_reply(_message("m1", label_ids=("SENT",)))
+
+    with pytest.raises(GmailReplyError):
+        fake.client().create_draft_reply("t1", "body")
+
+    fake.drafts.create.assert_not_called()
+
+
+def test_create_draft_reply_never_targets_a_draft_message() -> None:
+    fake = FakeGmail()
+    fake.threads.get.return_value = _thread_for_reply(
+        _message("m1", sender="Dev <dev@c.example>", message_id_header="<a@c.example>"),
+        _message(
+            "m2",
+            sender="ap@kibit.example",
+            subject="Re: Számla 2024/05",
+            label_ids=("DRAFT",),
+            message_id_header="<draft@kibit.example>",
+        ),
+    )
+    fake.drafts.create.return_value = _request({"id": "draft-2"})
+
+    fake.client().create_draft_reply("t1", "body")
+
+    _, msg = _decode_draft(fake)
+    assert msg["To"] == "Dev <dev@c.example>"
+    assert msg["In-Reply-To"] == "<a@c.example>"
+
+
+def test_create_draft_reply_raises_when_thread_only_has_drafts_and_sent_mail() -> None:
+    fake = FakeGmail()
+    fake.threads.get.return_value = _thread_for_reply(
+        _message("m1", label_ids=("SENT",)), _message("m2", label_ids=("DRAFT",))
+    )
 
     with pytest.raises(GmailReplyError):
         fake.client().create_draft_reply("t1", "body")
