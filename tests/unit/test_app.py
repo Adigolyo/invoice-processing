@@ -56,19 +56,27 @@ def _client(
     ).test_client()
 
 
-# --- /healthz ---------------------------------------------------------------------------
+# --- /health -----------------------------------------------------------------------------
 
 
-def test_healthz_returns_200_without_authentication() -> None:
+# /health is the public check: Cloud Run's front end answers paths ending in "z" (such as
+# /healthz) itself with a 404. /healthz stays for the startup probe, which talks to the
+# container directly.
+HEALTH_PATHS = ["/health", "/healthz"]
+
+
+@pytest.mark.parametrize("path", HEALTH_PATHS)
+def test_health_returns_200_without_authentication(path: str) -> None:
     verifier = FakeVerifier()
-    response = _client(verifier).get("/healthz")
+    response = _client(verifier).get(path)
     assert response.status_code == 200
     assert response.get_json() == {"status": "ok"}
     assert verifier.calls == []
 
 
-def test_healthz_works_even_when_oidc_is_not_configured() -> None:
-    response = _client(FakeVerifier(), env={}).get("/healthz")
+@pytest.mark.parametrize("path", HEALTH_PATHS)
+def test_health_works_even_when_oidc_is_not_configured(path: str) -> None:
+    response = _client(FakeVerifier(), env={}).get(path)
     assert response.status_code == 200
 
 
