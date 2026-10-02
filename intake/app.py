@@ -1,6 +1,9 @@
 """Cloud Run HTTP entrypoint.
 
-- ``GET /healthz``: unauthenticated liveness check, no data and no side effects.
+- ``GET /health`` (and ``GET /healthz``): unauthenticated liveness check, no data and no
+  side effects. Use ``/health`` through the service URL: Cloud Run's front end answers
+  paths ending in ``z`` itself with a 404. ``/healthz`` serves the startup probe, which
+  reaches the container directly.
 - ``POST /run``: accepts only a Google-signed OIDC token minted for the Cloud Scheduler
   service account, with the configured audience, then runs one full polling cycle
   (``intake.pipeline.runtime.run_from_env``) and returns its summary:
@@ -135,8 +138,9 @@ def create_app(
     run_pipeline = runner or default_runner
     app = Flask(__name__)
 
+    @app.get("/health")
     @app.get("/healthz")
-    def healthz() -> tuple[Response, int]:
+    def health() -> tuple[Response, int]:
         return jsonify({"status": "ok"}), 200
 
     @app.post("/run")

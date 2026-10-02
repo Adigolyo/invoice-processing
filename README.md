@@ -106,7 +106,7 @@ The fixture-set end-to-end suite runs against the sandbox account:
 `pytest tests/e2e/fixture_set`.
 
 **Run locally:** TODO. The specification doesn't give a local run command yet. The
-service exposes `POST /run` and `GET /healthz`.
+service exposes `POST /run` and `GET /health` (`/healthz` is kept for the startup probe).
 
 **Deploy:** Terraform in `infra/` provisions Cloud Run, Cloud Scheduler, Secret Manager
 and CI identities. `.github/workflows/deploy.yml` deploys to staging automatically when CI

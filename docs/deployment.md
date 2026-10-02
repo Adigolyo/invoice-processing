@@ -200,7 +200,7 @@ The WIF provider only accepts tokens from `$GITHUB_REPO` workflows running on
 ## 5. Authenticated smoke test
 
 Both services are IAM-protected: only the Scheduler SA and the CI deployer hold
-`roles/run.invoker`. An unauthenticated `curl …/healthz` therefore gets **403**, which is
+`roles/run.invoker`. An unauthenticated `curl …/health` therefore gets **403**, which is
 expected. Send an identity token instead. A project Owner may invoke any service, and a
 user's identity token comes from plain `print-identity-token`. `--audiences` only works
 for service accounts.
@@ -209,8 +209,8 @@ for service accounts.
 for ENV in staging production; do
   URL="$(gcloud run services describe "kibit-intake-${ENV}" --region="$REGION" --format='value(status.url)')"
   echo "== ${ENV}: ${URL}"
-  curl -s -w ' %{http_code}\n' -H "Authorization: Bearer $(gcloud auth print-identity-token)" "${URL}/healthz"   # {"status":"ok"} 200
-  curl -s -o /dev/null -w 'no token: %{http_code}\n' "${URL}/healthz"                                           # 403 (IAM)
+  curl -s -w ' %{http_code}\n' -H "Authorization: Bearer $(gcloud auth print-identity-token)" "${URL}/health"    # {"status":"ok"} 200
+  curl -s -o /dev/null -w 'no token: %{http_code}\n' "${URL}/health"                                            # 403 (IAM)
   curl -s -w ' %{http_code}\n' -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" "${URL}/run" # {"error":"unauthorized"} 401
 done
 ```
@@ -264,7 +264,7 @@ with *Run workflow*:
 2. **deploy-staging**:
    - `gcloud run services update kibit-intake-staging --image <digest>`, then
      `update-traffic --to-latest`;
-   - an authenticated smoke test: `/healthz` with a token returns 200, without a token
+   - an authenticated smoke test: `/health` with a token returns 200, without a token
      401/403, and `POST /run` as CI returns 401.
 3. **release-gate**: `pytest tests/e2e/fixture_set` + `scripts/verify_fixture_answer_key.py
    --strict` against the sandbox account, as `kibit-ci-e2e`. That SA can only read the
@@ -373,7 +373,7 @@ served. CPU is allocated per request (`cpu_idle = true`).
 | Scheduler `retry_count = 1`, default attempt deadline | `retry_count = 0`, `attempt_deadline = 1800s` | A retry could overlap the still-running first attempt |
 | `AWAITING_TIG_ALERT_DAYS` env var | Not set | The app doesn't read it. Staleness alerting belongs to Task 23 |
 | Env vars for extractor: none | `EXTRACTOR_BACKEND=ai_compass`, `AI_COMPASS_BASE_URL`, `AI_COMPASS_MODEL`, `AI_COMPASS_EFFORT` | ADR 4 revised |
-| `/healthz` smoke test with unauthenticated `curl` | Identity-token smoke test. CI deployer holds `run.invoker` | The service is IAM-protected, so anonymous requests get 403 |
+| `/healthz` smoke test with unauthenticated `curl` | Identity-token smoke test on `/health` (Cloud Run's front end 404s public paths ending in `z`). CI deployer holds `run.invoker` | The service is IAM-protected, so anonymous requests get 403 |
 | CI deployer: AR writer + `run.developer` | + `iam.serviceAccountUser` on each runtime SA, + `run.invoker` | Deploying a revision that runs as the runtime SA needs `actAs`. `run.invoker` is for the smoke test |
 | WIF condition: repository only | Repository **and** `refs/heads/main` | Feature-branch workflows can't deploy |
 | CI deploy: `terraform apply -target=…intake["<env>"]` with `image_tags` | `gcloud run services update --image <digest>`. Terraform `ignore_changes` on the image | CI needs no state-bucket access, no tfvars and no `-target`. The factory step also read a nonexistent `production_image_tag` output, and `-target` still requires every variable |

@@ -140,10 +140,10 @@ jobs:
         run: |
           set -euo pipefail
           code() { curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors "$@"; }
-          healthz="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/healthz")"
-          echo "GET /healthz with token: ${healthz} (want 200)"; [ "$healthz" = 200 ]
-          anon="$(code "${URL}/healthz")"
-          echo "GET /healthz without token: ${anon} (want 401/403 from Cloud Run IAM)"
+          health="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/health")"
+          echo "GET /health with token: ${health} (want 200)"; [ "$health" = 200 ]
+          anon="$(code "${URL}/health")"
+          echo "GET /health without token: ${anon} (want 401/403 from Cloud Run IAM)"
           case "$anon" in 401|403) ;; *) exit 1 ;; esac
           run="$(code -X POST -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/run")"
           echo "POST /run as CI deployer: ${run} (want 401, app accepts only the Scheduler SA)"
@@ -221,10 +221,10 @@ jobs:
         run: |
           set -euo pipefail
           code() { curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors "$@"; }
-          healthz="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/healthz")"
-          echo "GET /healthz with token: ${healthz} (want 200)"; [ "$healthz" = 200 ]
-          anon="$(code "${URL}/healthz")"
-          echo "GET /healthz without token: ${anon} (want 401/403 from Cloud Run IAM)"
+          health="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/health")"
+          echo "GET /health with token: ${health} (want 200)"; [ "$health" = 200 ]
+          anon="$(code "${URL}/health")"
+          echo "GET /health without token: ${anon} (want 401/403 from Cloud Run IAM)"
           case "$anon" in 401|403) ;; *) exit 1 ;; esac
           run="$(code -X POST -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/run")"
           echo "POST /run as CI deployer: ${run} (want 401, app accepts only the Scheduler SA)"
