@@ -8,6 +8,14 @@ The ``googleapiclient`` Drive resource is injected through the constructor. Ever
 Shared-Drive-safe (``supportsAllDrives``; list calls also ``includeItemsFromAllDrives`` and
 ``corpora="allDrives"``), so the root folder may live in a My Drive or a Shared Drive.
 
+Source link: ``save_file`` can tag an uploaded file with the Gmail message (and the
+attachment within it) it came from, as private ``appProperties``
+(``kibitSourceMessageId`` / ``kibitSourceAttachment``, visible only to this OAuth app).
+``find_filed_by_source`` looks those files up again, so a re-run of an email whose
+filing succeeded but whose booking failed can reuse the filed registry number instead of
+filing a second copy (see ``intake.registry.filing``). Drive caps each property's key plus
+value at 124 bytes; longer values raise ``ValueError`` before any API call.
+
 Error semantics: Drive API failures propagate unchanged as
 ``googleapiclient.errors.HttpError``. Malformed responses raise ``DriveResponseError``;
 two month folders with the same name under the root raise ``DriveConflictError`` (which
@@ -33,7 +41,13 @@ FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 DEFAULT_MIME_TYPE = "application/octet-stream"
 
 _YYMM = re.compile(r"^\d{2}(0[1-9]|1[0-2])$")
+SOURCE_MESSAGE_ID_PROPERTY = "kibitSourceMessageId"
+SOURCE_ATTACHMENT_PROPERTY = "kibitSourceAttachment"
+MAX_APP_PROPERTY_BYTES = 124
+"""Drive's limit on the UTF-8 size of one ``appProperties`` key plus its value."""
+
 _LIST_FIELDS = "nextPageToken, files(id, name, mimeType)"
+_SOURCE_LIST_FIELDS = "nextPageToken, files(id, name, mimeType, parents)"
 _PAGE_SIZE = 1000
 
 
@@ -52,6 +66,43 @@ class SavedFile:
     file_id: str
     filename: str
     created: bool
+
+
+@dataclass(frozen=True, slots=True)
+class FiledFileRef:
+    """A file found by ``find_filed_by_source``; ``folder_id`` is None if Drive hid it."""
+
+    file_id: str
+    name: str
+    folder_id: str | None
+
+
+def _validate_app_property(key: str, value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{key} must be a non-blank string, got {value!r}")
+    if any(unicodedata.category(ch) == "Cc" for ch in value):
+        raise ValueError(f"{key} must not contain control characters: {value!r}")
+    if len(key.encode()) + len(value.encode()) > MAX_APP_PROPERTY_BYTES:
+        raise ValueError(
+            f"{key} value is too long for a Drive appProperty "
+            f"(key + value must fit {MAX_APP_PROPERTY_BYTES} bytes)"
+        )
+    return value
+
+
+def _source_properties(message_id: str | None, attachment_key: str | None) -> dict[str, str]:
+    if message_id is None:
+        if attachment_key is not None:
+            raise ValueError("source_attachment_key requires source_message_id")
+        return {}
+    props = {
+        SOURCE_MESSAGE_ID_PROPERTY: _validate_app_property(SOURCE_MESSAGE_ID_PROPERTY, message_id)
+    }
+    if attachment_key is not None:
+        props[SOURCE_ATTACHMENT_PROPERTY] = _validate_app_property(
+            SOURCE_ATTACHMENT_PROPERTY, attachment_key
+        )
+    return props
 
 
 def _validate_yymm(yymm: str) -> None:
@@ -142,17 +193,29 @@ class DriveClient:
         return _file_id(response)
 
     def save_file(
-        self, folder_id: str, filename: str, content: bytes, mime_type: str | None = None
+        self,
+        folder_id: str,
+        filename: str,
+        content: bytes,
+        mime_type: str | None = None,
+        *,
+        source_message_id: str | None = None,
+        source_attachment_key: str | None = None,
     ) -> SavedFile:
         """Upload ``content`` as ``filename`` into ``folder_id``, unless that name exists.
 
         Idempotent by filename: if a file with exactly this name is already in the folder,
-        nothing is uploaded and the existing file's ID is returned with ``created=False``.
-        The MIME type defaults to one guessed from the extension.
+        nothing is uploaded and the existing file's ID is returned with ``created=False``
+        (its ``appProperties`` are left as they are). The MIME type defaults to one
+        guessed from the extension.
+
+        ``source_message_id`` (and optionally ``source_attachment_key``) are stored on the
+        new file as private ``appProperties`` for ``find_filed_by_source``.
         """
         if not folder_id.strip():
             raise ValueError("folder_id is required")
         validate_filename(filename)
+        app_properties = _source_properties(source_message_id, source_attachment_key)
         existing = self._list(
             f"'{_escape(folder_id)}' in parents and name = '{_escape(filename)}' "
             "and trashed = false"
@@ -162,9 +225,12 @@ class DriveClient:
 
         resolved_mime = mime_type or mimetypes.guess_type(filename)[0] or DEFAULT_MIME_TYPE
         media = MediaIoBaseUpload(io.BytesIO(content), mimetype=resolved_mime, resumable=False)
+        body: dict[str, Any] = {"name": filename, "parents": [folder_id]}
+        if app_properties:
+            body["appProperties"] = app_properties
         response = _execute(
             self._service.files().create(
-                body={"name": filename, "parents": [folder_id]},
+                body=body,
                 media_body=media,
                 fields="id",
                 supportsAllDrives=True,
@@ -172,13 +238,44 @@ class DriveClient:
         )
         return SavedFile(file_id=_file_id(response), filename=filename, created=True)
 
-    def _list(self, query: str) -> list[dict[str, Any]]:
+    def find_filed_by_source(
+        self, message_id: str, attachment_key: str | None = None
+    ) -> list[FiledFileRef]:
+        """Every non-trashed file ``save_file`` tagged with this source, in Drive's order.
+
+        With ``attachment_key`` only files of that attachment match; without it, every
+        file filed from the message does. Searches all drives the account can see (not
+        only the root folder), so a match's location is reported via ``folder_id``.
+        Raises on any API error, so a failed lookup is never mistaken for "not filed".
+        """
+        props = _source_properties(message_id, attachment_key)
+        clauses = [
+            f"appProperties has {{ key='{key}' and value='{_escape(value)}' }}"
+            for key, value in props.items()
+        ]
+        clauses += [f"mimeType != '{FOLDER_MIME_TYPE}'", "trashed = false"]
+        refs: list[FiledFileRef] = []
+        for entry in self._list(" and ".join(clauses), fields=_SOURCE_LIST_FIELDS):
+            parents = entry.get("parents")
+            folder_id = (
+                parents[0]
+                if isinstance(parents, list) and parents and isinstance(parents[0], str)
+                else None
+            )
+            refs.append(
+                FiledFileRef(
+                    file_id=_file_id(entry), name=str(entry.get("name", "")), folder_id=folder_id
+                )
+            )
+        return refs
+
+    def _list(self, query: str, *, fields: str = _LIST_FIELDS) -> list[dict[str, Any]]:
         files: list[dict[str, Any]] = []
         page_token: str | None = None
         while True:
             kwargs: dict[str, Any] = {
                 "q": query,
-                "fields": _LIST_FIELDS,
+                "fields": fields,
                 "pageSize": _PAGE_SIZE,
                 "corpora": "allDrives",
                 "supportsAllDrives": True,
@@ -198,9 +295,13 @@ class DriveClient:
 
 __all__ = [
     "FOLDER_MIME_TYPE",
+    "MAX_APP_PROPERTY_BYTES",
+    "SOURCE_ATTACHMENT_PROPERTY",
+    "SOURCE_MESSAGE_ID_PROPERTY",
     "DriveClient",
     "DriveConflictError",
     "DriveResponseError",
+    "FiledFileRef",
     "SavedFile",
     "validate_filename",
 ]
