@@ -34,3 +34,6 @@ számla sorozat/
 
 # Local scanned invoices (real documents, never commit)
 scan/
+
+# Terraform plan files (may contain sensitive values)
+*.tfplan
