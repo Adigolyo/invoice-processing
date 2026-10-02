@@ -7,3 +7,6 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM"]
 
 [format]
 quote-style = "double"
+
+[lint.isort]
+known-first-party = ["intake"]
