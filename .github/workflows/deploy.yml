@@ -39,11 +39,43 @@ env:
   IMAGE_NAME: intake-service
 
 jobs:
-  build-and-push:
+  # Until infra/ is applied and the repository variables above are set (docs/deployment.md
+  # sections 1-4), there is nothing to deploy to: skip the pipeline with a notice instead of
+  # failing every push on main. A partial setup still fails loudly.
+  preflight:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - id: check
+        name: Check deployment configuration
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          WIF_PROVIDER: ${{ vars.WIF_PROVIDER }}
+          CI_DEPLOYER_SA_EMAIL: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+          CI_E2E_SA_EMAIL: ${{ vars.CI_E2E_SA_EMAIL }}
+        run: |
+          missing=()
+          for name in GCP_PROJECT_ID WIF_PROVIDER CI_DEPLOYER_SA_EMAIL CI_E2E_SA_EMAIL; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ "${#missing[@]}" -eq 4 ]; then
+            echo "::notice title=Deploy skipped::Deployment is not configured yet. Apply infra/ and set the repository variables (docs/deployment.md, section 4)."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          elif [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error title=Deploy misconfigured::Missing repository variables: ${missing[*]} (docs/deployment.md, section 4)."
+            exit 1
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build-and-push:
+    needs: preflight
+    if: needs.preflight.outputs.configured == 'true'
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.push.outputs.image }}
