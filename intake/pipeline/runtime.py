@@ -23,13 +23,12 @@ from typing import Any, Final
 
 from googleapiclient import discovery
 
-from intake import extraction
 from intake.clients.auth import credentials_from_env
 from intake.clients.drive_client import DriveClient
 from intake.clients.gmail_client import GmailClient
 from intake.clients.sheets_client import SheetsClient
 from intake.config import Config, ConfigError
-from intake.extraction import Extractor, GeminiExtractor
+from intake.extraction import Extractor, extractor_from_env
 from intake.pipeline.orchestrator import PipelineClients, RunSummary, run_cycle
 
 LEDGER_SPREADSHEET_ID_ENV: Final = "LEDGER_SPREADSHEET_ID"
@@ -50,16 +49,8 @@ def build_service(api: str, version: str, credentials: Any) -> Any:
 
 
 def build_extractor(env: Mapping[str, str], config: Config) -> Extractor:
-    """The single seam choosing the extraction backend.
-
-    Uses ``intake.extraction.extractor_from_env`` (backend chosen by
-    ``EXTRACTOR_BACKEND``) when that selector exists, otherwise the Gemini extractor.
-    The fallback goes once both extraction backends have landed.
-    """
-    selector: Callable[..., Extractor] | None = getattr(extraction, "extractor_from_env", None)
-    if selector is not None:
-        return selector(env, currency_map=config.currency_map)
-    return GeminiExtractor.from_env(env, currency_map=config.currency_map)
+    """The single seam choosing the extraction backend (``EXTRACTOR_BACKEND``)."""
+    return extractor_from_env(env, currency_map=config.currency_map)
 
 
 def run_with_credentials(

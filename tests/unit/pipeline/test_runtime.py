@@ -8,7 +8,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intake import extraction
 from intake.clients.drive_client import DriveClient
 from intake.clients.gmail_client import GmailClient
 from intake.clients.sheets_client import SheetsClient
@@ -97,7 +96,7 @@ def test_drive_root_env_must_agree_with_the_config_tab(monkeypatch: pytest.Monke
     captured.connect(make_config(drive_root_folder_id="some-other-folder"))
 
 
-def test_build_extractor_prefers_the_backend_selector(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_extractor_uses_the_backend_selector(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[dict[str, Any]] = []
     sentinel = FakeExtractor()
 
@@ -105,25 +104,10 @@ def test_build_extractor_prefers_the_backend_selector(monkeypatch: pytest.Monkey
         calls.append({"env": env, **kwargs})
         return sentinel
 
-    monkeypatch.setattr(extraction, "extractor_from_env", selector, raising=False)
+    monkeypatch.setattr(runtime, "extractor_from_env", selector)
 
     assert runtime.build_extractor(ENV, make_config()) is sentinel
     assert calls[0]["currency_map"] == make_config().currency_map
-
-
-def test_build_extractor_falls_back_to_gemini(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delattr(extraction, "extractor_from_env", raising=False)
-    sentinel = FakeExtractor()
-    seen: dict[str, Any] = {}
-
-    def from_env(env: Mapping[str, str], **kwargs: Any) -> FakeExtractor:
-        seen.update(kwargs)
-        return sentinel
-
-    monkeypatch.setattr(extraction.GeminiExtractor, "from_env", from_env)
-
-    assert runtime.build_extractor(ENV, make_config()) is sentinel
-    assert seen["currency_map"] == make_config().currency_map
 
 
 def test_run_from_env_reads_credentials_from_secret_manager(
