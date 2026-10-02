@@ -10,6 +10,7 @@ therefore reports explicitly).
 
 from __future__ import annotations
 
+import hashlib
 from datetime import date
 from typing import Any
 
@@ -17,19 +18,25 @@ import httplib2
 import pytest
 from googleapiclient.errors import HttpError
 
-from intake.clients.drive_client import DriveConflictError, SavedFile
+from intake.clients.drive_client import DriveConflictError, FiledFileRef, SavedFile
 from intake.clients.gmail_client import AttachmentContent
 from intake.models import Attachment, FlagReason, StageStatus
+from intake.registry import filing
 from intake.registry.filing import (
+    ExistingFiling,
     FiledInvoice,
     FilingConflictError,
     FilingError,
+    FilingSourceConflictError,
     FilingStatus,
+    attachment_source_key,
     file_attachment,
     file_invoice,
     filed_filename,
+    find_existing_filing,
 )
 from intake.registry.folder_naming import yymm_folder_name
+from intake.registry.registry_number import assemble
 from intake.registry.sequence import SequenceAllocator
 
 WIDTH = 3
@@ -49,6 +56,8 @@ class FakeDrive:
         self.folders: dict[str, dict[str, bytes]] = folders or {}
         self.calls: list[tuple[Any, ...]] = []
         self.mime_types: dict[str, str | None] = {}
+        # filename -> (source message id, source attachment key)
+        self.sources: dict[str, tuple[str | None, str | None]] = {}
         self.fail: dict[str, Exception] = {}
 
     def _maybe_fail(self, name: str) -> None:
@@ -67,7 +76,14 @@ class FakeDrive:
         return f"folder-{yymm}"
 
     def save_file(
-        self, folder_id: str, filename: str, content: bytes, mime_type: str | None = None
+        self,
+        folder_id: str,
+        filename: str,
+        content: bytes,
+        mime_type: str | None = None,
+        *,
+        source_message_id: str | None = None,
+        source_attachment_key: str | None = None,
     ) -> SavedFile:
         self.calls.append(("save_file", folder_id, filename))
         self._maybe_fail("save_file")
@@ -77,10 +93,26 @@ class FakeDrive:
             return SavedFile(file_id=f"id-{filename}", filename=filename, created=False)
         folder[filename] = content
         self.mime_types[filename] = mime_type
+        self.sources[filename] = (source_message_id, source_attachment_key)
         return SavedFile(file_id=f"id-{filename}", filename=filename, created=True)
 
     def list_month_folder(self, yymm: str) -> list[str]:
         return list(self.folders.get(yymm, {}))
+
+    def find_filed_by_source(
+        self, message_id: str, attachment_key: str | None = None
+    ) -> list[FiledFileRef]:
+        self.calls.append(("find_filed_by_source", message_id, attachment_key))
+        self._maybe_fail("find_filed_by_source")
+        refs = []
+        for yymm, folder in self.folders.items():
+            for name in folder:
+                msg, key = self.sources.get(name, (None, None))
+                if msg == message_id and (attachment_key is None or key == attachment_key):
+                    refs.append(
+                        FiledFileRef(file_id=f"id-{name}", name=name, folder_id=f"folder-{yymm}")
+                    )
+        return refs
 
 
 def _file(drive: FakeDrive, **overrides: Any) -> FiledInvoice:
@@ -460,3 +492,200 @@ def test_same_number_with_other_extension_is_a_separate_name() -> None:
     # Documented limitation: Drive names differ, so filing does not see this as a re-run.
     drive = FakeDrive({"2405": {"2405007ACMECORP.jpg": b"x"}})
     assert _file(drive).status is FilingStatus.CREATED
+
+
+# --- AC6 across runs: source link (Drive file <-> Gmail message + attachment) --------
+
+MSG = "18f2c3a4b5d6e7f8"
+
+
+def _attachment(name: str = "Invoice-77.pdf", content: bytes = PDF_BYTES) -> AttachmentContent:
+    return AttachmentContent(
+        attachment=Attachment(filename=name, mime_type="application/pdf", attachment_id="a1"),
+        content=content,
+    )
+
+
+class LegacyDrive(FakeDrive):
+    """A drive whose ``save_file`` predates the source kwargs (backward compatibility)."""
+
+    def save_file(  # type: ignore[override]
+        self, folder_id: str, filename: str, content: bytes, mime_type: str | None = None
+    ) -> SavedFile:
+        return super().save_file(folder_id, filename, content, mime_type)
+
+
+def test_attachment_source_key_is_a_content_sha256() -> None:
+    key = attachment_source_key(PDF_BYTES)
+
+    assert key == "sha256:" + hashlib.sha256(PDF_BYTES).hexdigest()
+    assert attachment_source_key(bytearray(PDF_BYTES)) == key
+    assert attachment_source_key(b"other") != key
+    # Drive appProperties: key + value must fit 124 bytes.
+    assert len("kibitSourceAttachment") + len(key.encode()) <= 124
+
+
+def test_attachment_source_key_rejects_non_bytes() -> None:
+    with pytest.raises(TypeError):
+        attachment_source_key("text")  # type: ignore[arg-type]
+
+
+def test_file_invoice_passes_the_source_through_to_drive() -> None:
+    drive = FakeDrive({"2405": {}})
+
+    _file(drive, source_message_id=MSG, source_attachment_key="sha256:abc")
+
+    assert drive.sources["2405007ACMECORP.pdf"] == (MSG, "sha256:abc")
+
+
+def test_file_invoice_without_source_works_with_a_drive_lacking_the_new_kwargs() -> None:
+    drive = LegacyDrive({"2405": {}})
+
+    assert _file(drive).status is FilingStatus.CREATED
+
+
+def test_file_attachment_links_message_id_and_content_key() -> None:
+    drive = FakeDrive({"2405": {}})
+    attachment = _attachment()
+
+    file_attachment(drive, NUMBER, attachment, sequence_width=WIDTH, source_message_id=MSG)
+
+    assert drive.sources["2405007ACMECORP.pdf"] == (MSG, attachment_source_key(PDF_BYTES))
+
+
+def test_file_attachment_without_message_id_sets_no_source() -> None:
+    drive = FakeDrive({"2405": {}})
+
+    file_attachment(drive, NUMBER, _attachment(), sequence_width=WIDTH)
+
+    assert drive.sources["2405007ACMECORP.pdf"] == (None, None)
+
+
+def test_find_existing_filing_returns_none_when_nothing_is_linked() -> None:
+    drive = FakeDrive({"2405": {"2405001OTHER.pdf": b"x"}})
+
+    assert find_existing_filing(drive, MSG, "sha256:abc", sequence_width=WIDTH) is None
+    assert ("find_filed_by_source", MSG, "sha256:abc") in drive.calls
+
+
+def test_find_existing_filing_returns_the_registry_number_of_the_one_match() -> None:
+    drive = FakeDrive({"2405": {}})
+    attachment = _attachment()
+    file_attachment(drive, NUMBER, attachment, sequence_width=WIDTH, source_message_id=MSG)
+
+    existing = find_existing_filing(
+        drive, MSG, attachment_source_key(attachment.content), sequence_width=WIDTH
+    )
+
+    assert existing == ExistingFiling(
+        registry_number=NUMBER,
+        file_id="id-2405007ACMECORP.pdf",
+        filename="2405007ACMECORP.pdf",
+        folder_id="folder-2405",
+        yymm="2405",
+    )
+
+
+def test_find_existing_filing_raises_on_more_than_one_match_never_guesses() -> None:
+    drive = FakeDrive({"2405": {"2405001ACME.pdf": b"a", "2405002ACME.pdf": b"a"}})
+    drive.sources = {"2405001ACME.pdf": (MSG, "k"), "2405002ACME.pdf": (MSG, "k")}
+
+    with pytest.raises(FilingSourceConflictError) as excinfo:
+        find_existing_filing(drive, MSG, "k", sequence_width=WIDTH)
+
+    assert excinfo.value.message_id == MSG
+    assert excinfo.value.attachment_key == "k"
+    assert sorted(excinfo.value.file_ids) == ["id-2405001ACME.pdf", "id-2405002ACME.pdf"]
+
+
+@pytest.mark.parametrize(
+    "name", ["Copy of 2405001ACME.pdf", "2405001acme.pdf", "2405001ACME (1).pdf", "2413001ACME.pdf"]
+)
+def test_find_existing_filing_raises_when_the_linked_name_is_not_a_registry_filename(
+    name: str,
+) -> None:
+    drive = FakeDrive({"2405": {name: b"a"}})
+    drive.sources = {name: (MSG, "k")}
+
+    with pytest.raises(FilingSourceConflictError, match="registry"):
+        find_existing_filing(drive, MSG, "k", sequence_width=WIDTH)
+
+
+def test_find_existing_filing_propagates_drive_errors_never_reports_not_found() -> None:
+    drive = FakeDrive({"2405": {}})
+    drive.fail["find_filed_by_source"] = _http_error(503)
+
+    with pytest.raises(HttpError):
+        find_existing_filing(drive, MSG, "k", sequence_width=WIDTH)
+
+
+def test_find_existing_filing_validates_sequence_width_before_any_drive_call() -> None:
+    drive = FakeDrive()
+
+    with pytest.raises(FilingError):
+        find_existing_filing(drive, MSG, "k", sequence_width=0)
+
+    assert drive.calls == []
+
+
+def test_two_attachments_of_one_email_map_to_their_own_filings() -> None:
+    drive = FakeDrive({"2405": {}})
+    first, second = _attachment("a.pdf", b"%PDF first"), _attachment("b.pdf", b"%PDF second")
+    file_attachment(drive, "2405001ACME", first, sequence_width=WIDTH, source_message_id=MSG)
+    file_attachment(drive, "2405002ACME", second, sequence_width=WIDTH, source_message_id=MSG)
+
+    found_first = find_existing_filing(
+        drive, MSG, attachment_source_key(first.content), sequence_width=WIDTH
+    )
+    found_second = find_existing_filing(
+        drive, MSG, attachment_source_key(second.content), sequence_width=WIDTH
+    )
+
+    assert found_first is not None and found_first.registry_number == "2405001ACME"
+    assert found_second is not None and found_second.registry_number == "2405002ACME"
+
+
+def _run_once(drive: FakeDrive, attachment: AttachmentContent, *, book_fails: bool) -> str:
+    """The orchestrator contract (Task 21) for one invoice attachment, minus extraction."""
+    key = attachment_source_key(attachment.content)
+    existing = find_existing_filing(drive, MSG, key, sequence_width=WIDTH)
+    if existing is not None:
+        number = existing.registry_number
+    else:
+        allocator = SequenceAllocator(drive, start=1, width=WIDTH)
+        number = assemble("2405", allocator.allocate("2405"), "ACMECORP", WIDTH)
+        file_attachment(
+            drive, number, attachment, sequence_width=WIDTH, source_message_id=MSG, require_new=True
+        )
+    if book_fails:
+        raise RuntimeError("Sheets append failed")
+    return number
+
+
+def test_qa_rerun_after_filed_but_booking_failed_reuses_the_registry_number() -> None:
+    drive = FakeDrive({"2405": {"2405006OTHER.pdf": b"x"}})
+    attachment = _attachment()
+
+    with pytest.raises(RuntimeError, match="Sheets"):
+        _run_once(drive, attachment, book_fails=True)
+    assert list(drive.folders["2405"]) == ["2405006OTHER.pdf", NUMBER + ".pdf"]
+
+    # Without the lookup a fresh allocation would now hand out 008 and file a second copy.
+    assert SequenceAllocator(drive, start=1, width=WIDTH).allocate("2405") == 8
+
+    number = _run_once(drive, attachment, book_fails=False)
+
+    assert number == NUMBER
+    assert list(drive.folders["2405"]) == ["2405006OTHER.pdf", NUMBER + ".pdf"]
+    assert sum(1 for call in drive.calls if call[0] == "save_file") == 1
+
+
+def test_module_exports_source_link_api() -> None:
+    for name in (
+        "ExistingFiling",
+        "FilingSourceConflictError",
+        "SourceLookupDrive",
+        "attachment_source_key",
+        "find_existing_filing",
+    ):
+        assert name in filing.__all__
