@@ -39,6 +39,20 @@ styles, free text) returns a ``NormalizationFailure``.
 non-breaking-space thousands separator) for human-facing text. The ledger itself
 receives the ``Decimal``: ``LedgerRow`` writes numbers, and the sheet's own (Hungarian)
 locale controls how they are displayed.
+
+``round_for_ledger`` (USR-004-02) applies the per-currency precision rule at the booking
+step, after currency ISO resolution (USR-002-05) and this module's normalisation:
+
+- **HUF** is booked as a whole number: rounded to the nearest integer, with an exact
+  ``.5`` rounding away from zero (``999.50`` -> ``1000``, ``-0.5`` -> ``-1``; Decimal's
+  ``ROUND_HALF_UP``, not banker's rounding). The result has no decimal places.
+- **Every other currency** passes through unchanged, keeping its source precision
+  (``EUR 12.345`` stays ``12.345``; nothing is rounded to the currency's minor unit).
+- **No resolved currency** (missing, blank, or not an upper-case ISO 4217 code as
+  ``to_iso_code`` returns it) is a ``NormalizationFailure``: no rounding decision is
+  made, rather than defaulting to either convention.
+
+``round_amounts_for_ledger`` applies the same rule independently to Net and Gross.
 """
 
 from __future__ import annotations
@@ -47,8 +61,10 @@ import dataclasses
 import re
 import unicodedata
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Final
+
+from babel.numbers import is_currency
 
 from intake.models import InvoiceExtraction
 from intake.normalization.result import NormalizationFailure
@@ -218,12 +234,61 @@ def normalize_amounts(extraction: InvoiceExtraction) -> NormalizedAmounts:
     return NormalizedAmounts(**values)
 
 
+WHOLE_NUMBER_CURRENCIES: Final = frozenset({"HUF"})
+
+
+def _is_resolved_iso_code(currency_iso: str | None) -> bool:
+    """An upper-case ISO 4217 code exactly as ``to_iso_code`` returns it."""
+    return (
+        currency_iso is not None
+        and len(currency_iso) == 3
+        and currency_iso.isascii()
+        and currency_iso.isalpha()
+        and currency_iso.isupper()
+        and is_currency(currency_iso)
+    )
+
+
+def round_for_ledger(amount: Decimal, currency_iso: str | None) -> Decimal | NormalizationFailure:
+    """Apply the booking precision rule: HUF to a whole number, others unchanged."""
+    if currency_iso is None or not _is_resolved_iso_code(currency_iso):
+        return NormalizationFailure(
+            f"cannot round for the ledger: currency {currency_iso!r} is not a resolved "
+            "ISO 4217 code",
+            field="currency",
+        )
+    if not amount.is_finite():
+        return NormalizationFailure(f"cannot round a non-finite amount {amount}")
+    if currency_iso not in WHOLE_NUMBER_CURRENCIES:
+        return amount
+    # int() is exact at any magnitude and drops both the sign of zero and any exponent.
+    return Decimal(int(amount.to_integral_value(rounding=ROUND_HALF_UP)))
+
+
+def round_amounts_for_ledger(
+    amounts: NormalizedAmounts, currency_iso: str | None
+) -> NormalizedAmounts:
+    """Round Net and Gross independently; failures and unextracted fields pass through."""
+    values: dict[str, AmountValue] = {}
+    for name in AMOUNT_FIELDS:
+        value: AmountValue = getattr(amounts, name)
+        if isinstance(value, Decimal):
+            value = round_for_ledger(value, currency_iso)
+            if isinstance(value, NormalizationFailure):
+                value = dataclasses.replace(value, field=name)
+        values[name] = value
+    return NormalizedAmounts(**values)
+
+
 __all__ = [
     "AMOUNT_FIELDS",
     "HU_DECIMAL_SEPARATOR",
     "HU_THOUSANDS_SEPARATOR",
+    "WHOLE_NUMBER_CURRENCIES",
     "NormalizedAmounts",
     "format_hungarian_amount",
     "normalize_amount",
     "normalize_amounts",
+    "round_amounts_for_ledger",
+    "round_for_ledger",
 ]
