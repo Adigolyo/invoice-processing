@@ -1,0 +1,21 @@
+# Secrets — never commit
+secrets/
+.env
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+*.egg-info/
+
+# Kit archive
+software-factory-invoice-processing.zip

@@ -1,0 +1,6 @@
+---
+description: Initialise the repository from its software factory project: create or update README.md and CLAUDE.md from the discovery document, technical design and backlog.
+alwaysApply: false
+---
+
+When this applies, read `.claude/skills/repo-init/SKILL.md` and follow it step by step. It is the single copy of this workflow, shared with Claude Code. Where it mentions a slash command, the user invokes this rule instead.

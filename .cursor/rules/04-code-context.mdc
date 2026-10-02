@@ -1,0 +1,6 @@
+---
+description: Answer questions about the existing code efficiently with the software factory's code-graph tools (search_graph, trace_path, get_code_snippet, get_architecture, query_graph).
+alwaysApply: false
+---
+
+When this applies, read `.claude/skills/code-context/SKILL.md` and follow it step by step. It is the single copy of this workflow, shared with Claude Code. Where it mentions a slash command, the user invokes this rule instead.

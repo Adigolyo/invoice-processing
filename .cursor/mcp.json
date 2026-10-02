@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "software-factory": {
+      "url": "http://108.131.214.204:20011/mcp"
+    }
+  }
+}

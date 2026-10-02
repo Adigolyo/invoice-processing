@@ -1,0 +1,6 @@
+---
+description: Render the software factory's UI design spec and design tokens as screens in Pencil or Figma.
+alwaysApply: false
+---
+
+When this applies, read `.claude/skills/ui-render/SKILL.md` and follow it step by step. It is the single copy of this workflow, shared with Claude Code. Where it mentions a slash command, the user invokes this rule instead.

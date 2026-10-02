@@ -1,0 +1,6 @@
+---
+description: Grade the current diff against the software factory's acceptance criteria and BDD scenarios, with a strict PASS/FAIL per item. Read-only.
+alwaysApply: false
+---
+
+When this applies, read `.claude/skills/qa-review/SKILL.md` and follow it step by step. It is the single copy of this workflow, shared with Claude Code. Where it mentions a slash command, the user invokes this rule instead.

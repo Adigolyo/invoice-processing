@@ -1,0 +1,14 @@
+---
+description: Software factory integration. The specification is read live through the software-factory MCP server.
+alwaysApply: true
+---
+
+Follow the rules in `.claude/software-factory.md`. It is the single copy shared with Claude Code.
+
+In short:
+
+- `.software-factory/project.json` holds the `project_id`. Pass it to every `software-factory` MCP tool call.
+- Never assume the stack, architecture or contracts. Read them with `get_implementation_context`, `read_backlog` and `read_artifact`.
+- Work is planned in the factory. Implement one execution-plan task at a time (see `02-implement-task`). Don't break work down yourself.
+- For questions about existing code, use the code-graph tools (see `04-code-context`) before opening files.
+- If the MCP server isn't connected, say so and point to `INTEGRATION.md`. Don't guess the specification.

@@ -1,0 +1,6 @@
+---
+description: Implement one task from the software factory's execution plan (Task Planner) test-first. Use when asked to implement or build a task, story or epic (EPIC-/USR- IDs).
+alwaysApply: false
+---
+
+When this applies, read `.claude/skills/implement-task/SKILL.md` and follow it step by step. It is the single copy of this workflow, shared with Claude Code. Where it mentions a slash command, the user invokes this rule instead.
