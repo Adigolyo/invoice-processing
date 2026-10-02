@@ -22,3 +22,9 @@ software-factory-invoice-processing.zip
 
 # Agent worktrees
 .claude/worktrees/
+
+# Example data kept local only (personal-looking details); tests skip when absent
+tests/fixtures/invoice_series/
+# Original example-data folders (TIG pairs are copied into tests/fixtures/tig_pairs/)
+TIG_szamla_parok/
+számla sorozat/
