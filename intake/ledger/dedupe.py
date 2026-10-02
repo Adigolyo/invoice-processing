@@ -106,7 +106,7 @@ def is_duplicate(source: LedgerKeySource, *, ext_id: str, provider: str) -> bool
     key = dedupe_key(ext_id=ext_id, provider=provider)
     found = key in _read_keys(source)
     if found:
-        logger.info("duplicate ledger entry detected", extra={"provider": provider})
+        logger.info("duplicate ledger entry detected")
     return found
 
 
@@ -135,7 +135,7 @@ class DuplicateGate:
         live = _read_keys(self._source)
         found = key in live or key in self._booked_this_run
         if found:
-            logger.info("duplicate ledger entry detected", extra={"provider": provider})
+            logger.info("duplicate ledger entry detected")
         return found
 
     def record_booked(self, *, ext_id: str, provider: str) -> None:

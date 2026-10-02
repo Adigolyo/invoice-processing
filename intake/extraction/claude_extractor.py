@@ -229,7 +229,7 @@ class ClaudeExtractor:
             details = message.stop_details
             if details is not None and details.category:
                 detail += f" (category={details.category})"
-            return rejected(detail, logger=logger, log_fields=log_fields)
+            return rejected(detail, logger=logger, log_fields=log_fields, reason="stop_reason")
 
         return interpret_response(
             text,

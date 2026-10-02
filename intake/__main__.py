@@ -18,6 +18,8 @@ taking precedence: ``LEDGER_SPREADSHEET_ID`` (required), ``DRIVE_ROOT_FOLDER_ID`
 The run summary is printed as JSON to stdout: counts per outcome plus, per candidate, the
 Gmail message ID, outcome, a fixed reason code and the registry number. Secrets,
 document content and amounts are never printed; a failed run prints only the error type.
+Logs go to stderr, human-readable (``intake.observability.logging``); a failed run also
+logs ``event=run_failed`` with a message-free stack trace.
 """
 
 from __future__ import annotations
@@ -35,8 +37,11 @@ from typing import Any
 from google.oauth2.credentials import Credentials
 
 from intake.clients.auth import SCOPES
+from intake.observability.logging import configure_logging, run_scope
 from intake.pipeline.orchestrator import RunSummary
 from intake.pipeline.runtime import run_with_credentials
+
+logger = logging.getLogger("intake.cli")
 
 TOKEN_FILE = "token.json"
 CLIENT_SECRET_FILE = "client_secret.json"
@@ -149,20 +154,27 @@ def main(
         return 2
 
     env = {**load_env_file(args.env_file), **(os.environ if environ is None else environ)}
-    try:
-        summary = runner(local_credentials(secrets_dir), env)
-    except Exception as exc:
-        print(f"run failed: {type(exc).__name__}", file=sys.stderr)
-        return 1
+    with run_scope():
+        try:
+            summary = runner(local_credentials(secrets_dir), env)
+        except Exception as exc:
+            logger.error(
+                "run failed (%s)",
+                type(exc).__name__,
+                exc_info=True,
+                extra={"event": "run_failed", "error_type": type(exc).__name__},
+            )
+            print(f"run failed: {type(exc).__name__}", file=sys.stderr)
+            return 1
     print(_summary_json(summary))
     return 0
 
 
-def _configure_logging() -> None:
-    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
-    logging.getLogger("intake").setLevel(logging.INFO)
+def run() -> int:
+    """Console entry: configure logging (readable locally, JSON on Cloud Run), then run."""
+    configure_logging()
+    return main()
 
 
 if __name__ == "__main__":  # pragma: no cover
-    _configure_logging()
-    sys.exit(main())
+    sys.exit(run())

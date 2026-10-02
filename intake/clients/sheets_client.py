@@ -160,7 +160,7 @@ class SheetsClient:
                 raise ConfigError(f"{self._config_tab} tab defines {key!r} more than once")
             raw[key] = row[1] if len(row) > 1 else None
         config = Config.from_mapping(raw)
-        logger.info("loaded config", extra={"keys": len(raw)})
+        logger.info("loaded config", extra={"config_keys": len(raw)})
         return config
 
     def verify_ledger_header(self) -> None:

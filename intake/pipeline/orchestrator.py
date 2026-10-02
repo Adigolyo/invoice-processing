@@ -50,9 +50,21 @@ Any exception in steps 1-9 aborts that candidate before any label or read-state 
 continues with the next candidate: one bad email never stops the run, and the failed
 one is retried next run because it is still unread and unlabelled.
 
-Logging: one structured record per stage with ``stage``, ``outcome``, ``message_id`` and
-``duration_ms`` (plus a fixed ``reason`` code when flagged), never document content,
-amounts, names or exception messages.
+Logging (``intake.observability.logging``; every record of a run carries its ``run_id``):
+
+- ``event=run_started`` (``candidates``) once, after polling;
+- one record per stage with ``stage``, ``outcome`` (``ok``/``flagged``/``error``),
+  ``message_id``, ``duration_ms`` and a fixed ``reason`` code when not ``ok``; INFO, or
+  WARNING when the stage raised;
+- one ``event=candidate_outcome`` per candidate with its final ``outcome`` (``processed``,
+  ``pending``, ``needs_review``, ``awaiting_tig``, ``error``, ``skipped``), ``reason``,
+  ``message_id`` and ``duration_ms``. An ``error`` outcome is logged at ERROR with the
+  failed ``stage``, the ``error_type`` and a message-free stack trace, so Cloud Error
+  Reporting picks it up and the ``error`` alert fires;
+- ``event=run_summary`` once, at the end, with the counts per outcome (``processed``,
+  ``pending``, ``needs_review``, ``awaiting_tig``, ``errors``, ``skipped``).
+
+Never document content, amounts, names, or exception messages.
 """
 
 from __future__ import annotations
@@ -86,6 +98,7 @@ from intake.normalization import (
     select_performance_date,
     to_iso_code,
 )
+from intake.observability.logging import run_scope
 from intake.pipeline.labels import plan_labels, validate_label_names
 from intake.reconciliation.draft_reply import draft_reply_on_mismatch
 from intake.reconciliation.outcome_rules import Outcome, needs_evaluation, tig_outcome
@@ -290,43 +303,85 @@ class Orchestrator:
         self._extractor = extractor
         self._allocator = SequenceAllocator.from_config(drive, config)
         self._gate = DuplicateGate(sheets)
+        self._failed_stage = "evaluate"
 
     def run(self) -> RunSummary:
         """Poll and process every candidate in Gmail's order. Polling errors propagate."""
-        candidates = poll_candidates(self._gmail, self._config)
-        logger.info("pipeline run started", extra={"candidates": len(candidates)})
-        summary = RunSummary(tuple(self.process(c) for c in candidates))
-        logger.info("pipeline run finished", extra={"summary": summary.to_dict()})
-        return summary
+        with run_scope():
+            candidates = poll_candidates(self._gmail, self._config)
+            logger.info(
+                "pipeline run started",
+                extra={"event": "run_started", "candidates": len(candidates)},
+            )
+            summary = RunSummary(tuple(self.process(c) for c in candidates))
+            logger.info(
+                "pipeline run finished",
+                extra={
+                    "event": "run_summary",
+                    "candidates": len(summary.results),
+                    **summary.to_dict(),
+                },
+            )
+            return summary
 
     def process(self, candidate: Candidate) -> CandidateResult:
-        """Evaluate one candidate and apply its outcome; never raises."""
-        message_id = candidate.message_id
+        """Evaluate one candidate, apply its outcome and log it; never raises."""
+        start = time.perf_counter()
+        self._failed_stage = "evaluate"
         try:
-            if not needs_evaluation(candidate.label_names, self._config.labels):
-                return CandidateResult(message_id, CandidateStatus.SKIPPED, "terminal_label")
-            state = _CandidateState()
-            try:
-                outcome = self._evaluate(candidate, state)
-                reason = "ok"
-            except _Stop as stop:
-                if stop.outcome is None:
-                    self._log(message_id, "evaluate", "skipped", 0, stop.reason)
-                    return CandidateResult(message_id, CandidateStatus.SKIPPED, stop.reason)
-                outcome, reason = stop.outcome, stop.reason
-            with self._stage("finalise", message_id):
-                self._finalise(candidate, outcome)
-            return CandidateResult(
-                message_id, _STATUS_BY_OUTCOME[outcome], reason, state.registry_number
-            )
+            result = self._process(candidate)
         except Exception as exc:
+            result = CandidateResult(
+                candidate.message_id, CandidateStatus.ERROR, type(exc).__name__
+            )
             logger.error(
                 "candidate aborted (%s): message_id=%s left unchanged for retry next run",
                 type(exc).__name__,
-                message_id,
-                extra={"message_id": message_id, "error_type": type(exc).__name__},
+                candidate.message_id,
+                exc_info=True,
+                extra={
+                    "event": "candidate_outcome",
+                    "outcome": result.status.value,
+                    "reason": result.reason,
+                    "message_id": result.message_id,
+                    "stage": self._failed_stage,
+                    "error_type": type(exc).__name__,
+                    "duration_ms": _ms(start),
+                },
             )
-            return CandidateResult(message_id, CandidateStatus.ERROR, type(exc).__name__)
+            return result
+        logger.info(
+            "candidate outcome=%s message_id=%s",
+            result.status.value,
+            result.message_id,
+            extra={
+                "event": "candidate_outcome",
+                "outcome": result.status.value,
+                "reason": result.reason,
+                "message_id": result.message_id,
+                "duration_ms": _ms(start),
+            },
+        )
+        return result
+
+    def _process(self, candidate: Candidate) -> CandidateResult:
+        message_id = candidate.message_id
+        if not needs_evaluation(candidate.label_names, self._config.labels):
+            return CandidateResult(message_id, CandidateStatus.SKIPPED, "terminal_label")
+        state = _CandidateState()
+        try:
+            outcome = self._evaluate(candidate, state)
+            reason = "ok"
+        except _Stop as stop:
+            if stop.outcome is None:
+                self._log(message_id, "evaluate", "skipped", 0, stop.reason)
+                return CandidateResult(message_id, CandidateStatus.SKIPPED, stop.reason)
+            outcome, reason = stop.outcome, stop.reason
+        with self._stage("finalise", message_id):
+            self._finalise(candidate, outcome)
+        return CandidateResult(
+            message_id, _STATUS_BY_OUTCOME[outcome], reason, state.registry_number
+        )
 
     # --- stages ---
 
@@ -462,7 +517,10 @@ class Orchestrator:
             if result.draft_missing:
                 logger.warning(
                     "TIG mismatch draft reply could not be created; create it by hand",
-                    extra={"message_id": candidate.message_id, "draft_status": result.status},
+                    extra={
+                        "message_id": candidate.message_id,
+                        "draft_status": str(result.status.value),
+                    },
                 )
         return outcome
 
@@ -615,6 +673,7 @@ class Orchestrator:
             raise
         except Exception as exc:
             outcome, reason = "error", type(exc).__name__
+            self._failed_stage = stage
             raise
         finally:
             self._log(message_id, stage, outcome, _ms(start), reason)
@@ -623,7 +682,9 @@ class Orchestrator:
     def _log(
         message_id: str, stage: str, outcome: str, duration_ms: int, reason: str | None
     ) -> None:
-        logger.info(
+        # A failed stage is a WARNING; the candidate's ERROR record follows in ``process``.
+        logger.log(
+            logging.WARNING if outcome == "error" else logging.INFO,
             "stage=%s outcome=%s message_id=%s duration_ms=%d",
             stage,
             outcome,
@@ -654,17 +715,18 @@ def run_cycle(sheets: SheetsPort, connect: Callable[[Config], PipelineClients]) 
     ``connect`` builds the Gmail/Drive clients and the extractor from the loaded Config,
     so tests inject fakes and production builds real clients (``intake.pipeline.runtime``).
     """
-    config = sheets.load_config()
-    validate_label_names(config.labels)
-    sheets.verify_ledger_header()
-    clients = connect(config)
-    return Orchestrator(
-        config=config,
-        gmail=clients.gmail,
-        drive=clients.drive,
-        sheets=sheets,
-        extractor=clients.extractor,
-    ).run()
+    with run_scope():
+        config = sheets.load_config()
+        validate_label_names(config.labels)
+        sheets.verify_ledger_header()
+        clients = connect(config)
+        return Orchestrator(
+            config=config,
+            gmail=clients.gmail,
+            drive=clients.drive,
+            sheets=sheets,
+            extractor=clients.extractor,
+        ).run()
 
 
 __all__ = [
