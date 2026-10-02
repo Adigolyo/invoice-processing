@@ -19,7 +19,10 @@ include = ["intake*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-markers = ["live: calls real external APIs (Gemini, sandbox Workspace)"]
+markers = [
+    "live: calls real external APIs (Gemini, sandbox Workspace)",
+    "e2e: end-to-end fixture-set release gate against the sandbox Workspace (opt in: -m e2e)",
+]
 
 [tool.coverage.run]
 source = ["intake"]

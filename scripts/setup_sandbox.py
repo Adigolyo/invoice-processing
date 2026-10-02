@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import base64
 import sys
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from email.utils import format_datetime
@@ -46,12 +47,14 @@ PM_ADDRESS = "projekt@kibitfinance.com"
 MAILBOX = "invoice@kibitfinance.com"
 
 
-def config_rows(drive_root_folder_id: str) -> list[list[str]]:
+def config_rows(
+    drive_root_folder_id: str, contractor_domains: Sequence[str] = CONTRACTOR_DOMAINS
+) -> list[list[str]]:
     return [
         ["key", "value"],
         ["invoice_keywords", "számla, szamla, invoice, Rechnung, díjbekérő"],
         ["attachment_mime_allowlist", "application/pdf, image/jpeg, image/png"],
-        ["contractor_identifiers", ", ".join(CONTRACTOR_DOMAINS)],
+        ["contractor_identifiers", ", ".join(contractor_domains)],
         ["tig_subject_indicators", "TIG, teljesítésigazolás, teljesitesigazolas"],
         ["currency_map", "Ft=HUF, HUF=HUF, €=EUR, EUR=EUR, $=USD, USD=USD"],
         ["label_processed", LABELS[0]],
@@ -116,28 +119,33 @@ def find_file(drive: Any, name: str, mime: str) -> str | None:
     return files[0]["id"] if files else None
 
 
-def ensure_drive_folder(drive: Any) -> str:
-    folder_id = find_file(drive, DRIVE_FOLDER_NAME, FOLDER_MIME)
+def ensure_drive_folder(drive: Any, name: str = DRIVE_FOLDER_NAME) -> str:
+    folder_id = find_file(drive, name, FOLDER_MIME)
     if folder_id:
         print(f"drive folder exists: {folder_id}")
         return folder_id
     folder = (
-        drive.files()
-        .create(body={"name": DRIVE_FOLDER_NAME, "mimeType": FOLDER_MIME}, fields="id")
-        .execute()
+        drive.files().create(body={"name": name, "mimeType": FOLDER_MIME}, fields="id").execute()
     )
     print(f"drive folder created: {folder['id']}")
     return str(folder["id"])
 
 
-def ensure_spreadsheet(drive: Any, sheets: Any, drive_root_folder_id: str) -> str:
-    spreadsheet_id = find_file(drive, SPREADSHEET_TITLE, SHEET_MIME)
+def ensure_spreadsheet(
+    drive: Any,
+    sheets: Any,
+    drive_root_folder_id: str,
+    *,
+    title: str = SPREADSHEET_TITLE,
+    contractor_domains: Sequence[str] = CONTRACTOR_DOMAINS,
+) -> str:
+    spreadsheet_id = find_file(drive, title, SHEET_MIME)
     if spreadsheet_id is None:
         created = (
             sheets.spreadsheets()
             .create(
                 body={
-                    "properties": {"title": SPREADSHEET_TITLE, "locale": "hu_HU"},
+                    "properties": {"title": title, "locale": "hu_HU"},
                     "sheets": [
                         {"properties": {"title": "Ledger"}},
                         {"properties": {"title": "Config"}},
@@ -162,13 +170,14 @@ def ensure_spreadsheet(drive: Any, sheets: Any, drive_root_folder_id: str) -> st
             body={"values": [list(LEDGER_HEADER)]},
         ).execute()
         print("ledger header written")
+    rows = config_rows(drive_root_folder_id, contractor_domains)
     values.update(
         spreadsheetId=spreadsheet_id,
-        range="'Config'!A1:B14",
+        range=f"'Config'!A1:B{len(rows)}",
         valueInputOption="RAW",
-        body={"values": config_rows(drive_root_folder_id)},
+        body={"values": rows},
     ).execute()
-    print("config tab written (13 keys)")
+    print(f"config tab written ({len(rows) - 1} keys)")
     return spreadsheet_id
 
 
@@ -192,7 +201,7 @@ def _pdf(path: Path) -> tuple[str, bytes]:
     return path.name, path.read_bytes()
 
 
-def _message(
+def build_message(
     *,
     sender: str,
     to: str,
@@ -218,7 +227,7 @@ def _message(
     return base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
 
-def _exists(gmail: Any, message_id: str) -> str | None:
+def find_thread_by_message_id(gmail: Any, message_id: str) -> str | None:
     found = (
         gmail.users()
         .messages()
@@ -229,7 +238,8 @@ def _exists(gmail: Any, message_id: str) -> str | None:
     return found[0]["threadId"] if found else None
 
 
-def _insert(gmail: Any, raw: str, thread_id: str | None = None) -> str:
+def insert_message_ids(gmail: Any, raw: str, thread_id: str | None = None) -> tuple[str, str]:
+    """Insert an unread inbox message; returns its Gmail ``(message ID, thread ID)``."""
     body: dict[str, Any] = {"raw": raw, "labelIds": ["INBOX", "UNREAD"]}
     if thread_id:
         body["threadId"] = thread_id
@@ -239,7 +249,11 @@ def _insert(gmail: Any, raw: str, thread_id: str | None = None) -> str:
         .insert(userId="me", body=body, internalDateSource="dateHeader")
         .execute()
     )
-    return str(inserted["threadId"])
+    return str(inserted["id"]), str(inserted["threadId"])
+
+
+def insert_message(gmail: Any, raw: str, thread_id: str | None = None) -> str:
+    return insert_message_ids(gmail, raw, thread_id)[1]
 
 
 def seed_demo_emails(gmail: Any) -> None:
@@ -250,7 +264,7 @@ def seed_demo_emails(gmail: Any) -> None:
         invoice_pdf = next(p for p in folder.glob("*.pdf") if not p.name.startswith("TIG-"))
         tig_number = tig_pdf.stem
         invoice_mid = f"<demo-{scenario}-invoice@kibit-demo.example>"
-        if _exists(gmail, invoice_mid):
+        if find_thread_by_message_id(gmail, invoice_mid):
             print(f"demo email exists: {scenario}")
             continue
 
@@ -259,11 +273,11 @@ def seed_demo_emails(gmail: Any) -> None:
         subject = f"Számla {invoice_pdf.stem}"
         if has_tig:
             tig_mid = f"<demo-{scenario}-tig@kibit-demo.example>"
-            thread_id = _exists(gmail, tig_mid)
+            thread_id = find_thread_by_message_id(gmail, tig_mid)
             if thread_id is None:
-                thread_id = _insert(
+                thread_id = insert_message(
                     gmail,
-                    _message(
+                    build_message(
                         sender=f"Projektmenedzser <{PM_ADDRESS}>",
                         to=sender,
                         subject=f"Teljesítésigazolás {tig_number}",
@@ -279,9 +293,9 @@ def seed_demo_emails(gmail: Any) -> None:
             reply_to = tig_mid
             subject = f"Re: Teljesítésigazolás {tig_number}"
 
-        _insert(
+        insert_message(
             gmail,
-            _message(
+            build_message(
                 sender=f"{sender.split('@')[1].split('.')[0].upper()} <{sender}>",
                 to=MAILBOX,
                 subject=subject,
