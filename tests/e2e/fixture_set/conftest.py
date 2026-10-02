@@ -20,6 +20,10 @@ Configuration (environment):
   ``<repo>/secrets``): the local OAuth token and the AI Compass settings. The real
   environment overrides the file. ``LEDGER_SPREADSHEET_ID``/``DRIVE_ROOT_FOLDER_ID`` from
   it are ignored: the run always uses its own fresh spreadsheet and folder.
+- In CI (no ``token.json``): ``GCP_PROJECT_ID`` + ``ENVIRONMENT=staging``. The sandbox
+  OAuth credentials and the AI Compass key are then read from Secret Manager, as the
+  deployed service reads them.
+- ``KIBIT_E2E_REQUIRED=1`` (release gate): whatever would skip the suite fails it.
 - ``KIBIT_E2E_RESULTS_DIR`` (default ``tests/e2e/results``).
 - ``KIBIT_E2E_COOLDOWN_S`` (default 90): pause before run 1 and before run 2, so the
   sandbox's per-user Gmail quota recovers (live runs hit ``rateLimitExceeded`` while
@@ -43,6 +47,7 @@ from typing import Any
 import pytest
 
 from intake.__main__ import TOKEN_FILE, load_env_file, local_credentials
+from intake.clients.auth import credentials_from_env
 from intake.extraction import AI_COMPASS_API_KEY_ENV
 from intake.pipeline.runtime import (
     DRIVE_ROOT_FOLDER_ID_ENV,
@@ -80,9 +85,10 @@ class LiveEnv:
     pytest prints fixture values in tracebacks, and the environment holds API keys.
     """
 
-    def __init__(self, values: dict[str, str], credentials: Any) -> None:
+    def __init__(self, values: dict[str, str], credentials: Any, source: str = "token") -> None:
         self.values = values
         self.credentials = credentials
+        self.source = source
 
     def __repr__(self) -> str:
         return f"LiveEnv(<{len(self.values)} variables, redacted>)"
@@ -97,16 +103,21 @@ def _paths() -> tuple[Path, Path]:
 @pytest.fixture(scope="session")
 def e2e_env(pytestconfig: pytest.Config) -> LiveEnv:
     if "e2e" not in (pytestconfig.option.markexpr or ""):
-        pytest.skip("live E2E suite: opt in with `pytest -m e2e tests/e2e`")
+        workspace.unavailable("live E2E suite: opt in with `pytest -m e2e tests/e2e`")
     env_file, secrets_dir = _paths()
-    if not (secrets_dir / TOKEN_FILE).is_file():
-        pytest.skip(f"no OAuth token at {secrets_dir / TOKEN_FILE}")
     env = {**load_env_file(env_file), **os.environ}
-    if not env.get(AI_COMPASS_API_KEY_ENV, "").strip():
-        pytest.skip(f"{AI_COMPASS_API_KEY_ENV} not set (env or {env_file})")
+    source = workspace.credential_source(env, secrets_dir)
+    if source is None:
+        workspace.unavailable(
+            f"no OAuth token at {secrets_dir / TOKEN_FILE} and no GCP_PROJECT_ID + "
+            "ENVIRONMENT to read the sandbox credentials from Secret Manager"
+        )
+    if not workspace.ai_compass_key_available(env):
+        workspace.unavailable(f"{AI_COMPASS_API_KEY_ENV} not set (env or {env_file})")
     if not workspace.ANSWER_KEY.is_file():
-        pytest.skip("tests/fixtures/tig_pairs/answer_key.json not present")
-    return LiveEnv(env, local_credentials(secrets_dir))
+        workspace.unavailable("tests/fixtures/tig_pairs/answer_key.json not present")
+    credentials = local_credentials(secrets_dir) if source == "token" else credentials_from_env(env)
+    return LiveEnv(env, credentials, source)
 
 
 def _write(path: Path, data: dict[str, Any]) -> None:
@@ -165,7 +176,7 @@ def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
             spreadsheet_id=spreadsheet_id,
             folder_id=folder_id,
             contractor_identifiers=contractors,
-            mode="local run_with_credentials (Tasks 22/23 not deployed)",
+            mode=f"local run_with_credentials, credentials from {e2e_env.source}",
             model=env.get("AI_COMPASS_MODEL") or "default",
         )
         t = time.monotonic()

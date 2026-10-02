@@ -247,8 +247,10 @@ When staging looks right, run the full release gate. Run it locally or let CI ru
 step 7:
 
 ```bash
-pytest tests/e2e/fixture_set -v
-python scripts/verify_fixture_answer_key.py --strict
+gcloud scheduler jobs pause kibit-intake-poll-staging --location="$REGION"
+pytest -m e2e tests/e2e/fixture_set -v
+python scripts/verify_fixture_answer_key.py --strict --require-run --results tests/e2e/results/<run-id>.json
+gcloud scheduler jobs resume kibit-intake-poll-staging --location="$REGION"
 ```
 
 Resume production only after that:
@@ -266,9 +268,19 @@ with *Run workflow*:
      `update-traffic --to-latest`;
    - an authenticated smoke test: `/health` with a token returns 200, without a token
      401/403, and `POST /run` as CI returns 401.
-3. **release-gate**: `pytest tests/e2e/fixture_set` + `scripts/verify_fixture_answer_key.py
-   --strict` against the sandbox account, as `kibit-ci-e2e`. That SA can only read the
-   staging secrets. Both files are owned by Task 24, and the job fails until they exist.
+3. **release-gate**, as `kibit-ci-e2e`, fail-closed:
+   - pauses `kibit-intake-poll-staging` (custom role `kibitSchedulerPauser`), so the
+     staging service doesn't book the seeded emails into the demo ledger;
+   - `pytest -m e2e tests/e2e/fixture_set` with `KIBIT_E2E_REQUIRED=1`: the 32 pairs,
+     run twice against a fresh ledger and folder. The sandbox OAuth credentials and the
+     AI Compass key come from the staging secrets, which that SA can read. Anything that
+     would skip the suite fails it;
+   - `scripts/verify_fixture_answer_key.py --strict --require-run` on the run's results;
+   - resumes the staging job if it was enabled before.
+
+   Each release costs about 10 minutes and ~64 AI Compass calls, and leaves an
+   "Kibit E2E ledger <run-id>" sheet and "Invoices E2E <run-id>" folder in the sandbox
+   Drive.
 4. **deploy-production**: waits for approval on the `production` Environment, then
    promotes **the same digest** and runs the same smoke test.
 
@@ -331,8 +343,8 @@ Remaining overlap risk, not closed by infrastructure:
   production deploy.
 - **Local or E2E runs against the same mailbox.** `python -m intake` or the release-gate
   suite against the sandbox account can overlap a scheduled staging run. Pause
-  `kibit-intake-poll-staging` while running them by hand. The CI release gate does not
-  pause it: that needs `roles/cloudscheduler.admin` at project level (open item).
+  `kibit-intake-poll-staging` while running them by hand. The CI release gate pauses
+  and resumes it itself.
 - Closing these properly is the deferred scaling step: a per-month lock, e.g. Firestore
   with Cloud Tasks (ADR 5).
 
@@ -392,11 +404,9 @@ served. CPU is allocated per request (`cpu_idle = true`).
 - Steps 3–4: the OAuth consent for both mailboxes, the AI Compass keys, the GitHub
   variables, the `staging` and `production` Environments with reviewers, and branch
   protection.
-- Task 24 must provide `tests/e2e/fixture_set` and `scripts/verify_fixture_answer_key.py`.
-  Until then the release gate, and therefore production deploys, fail. The suite reads
-  `GCP_PROJECT_ID`, `ENVIRONMENT=staging`, `LEDGER_SPREADSHEET_ID`, `DRIVE_ROOT_FOLDER_ID`
-  and `STAGING_SERVICE_URL`. If it needs to trigger the staging job itself, grant
-  `kibit-ci-e2e` `roles/cloudscheduler.jobRunner`.
+- The release gate runs this commit's pipeline on the runner against the sandbox, not
+  the deployed staging revision (`/run` accepts only the Scheduler SA). Both are built
+  from the same commit.
 - Security checklist follow-ups, not done here:
   - Artifact Registry vulnerability scanning and a cleanup policy (FinOps);
   - `pip-audit` in CI;

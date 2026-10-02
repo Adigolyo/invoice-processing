@@ -59,6 +59,11 @@ def main(argv: list[str] | None = None) -> int:
     source.add_argument("--spreadsheet", help="an E2E run's ledger spreadsheet ID (live)")
     parser.add_argument("--folder", help="that run's Drive root folder ID (with --spreadsheet)")
     parser.add_argument("--secrets-dir", type=Path, default=ROOT / "secrets")
+    parser.add_argument(
+        "--require-run",
+        action="store_true",
+        help="fail unless a complete run (first and second) is verified (release gate)",
+    )
     args = parser.parse_args(argv)
     if bool(args.spreadsheet) != bool(args.folder):
         parser.error("--spreadsheet and --folder go together")
@@ -98,6 +103,10 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"  {problem}")
         failures += len(problems)
+
+    if args.require_run and (first is None or (args.results and second is None)):
+        print("no E2E run to verify: the release gate needs a complete run (run 1 and run 2)")
+        failures += 1
 
     print(f"\n{'FAIL' if failures else 'PASS'} ({failures} problem(s))")
     return 1 if failures and args.strict else 0

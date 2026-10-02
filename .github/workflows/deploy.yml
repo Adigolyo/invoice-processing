@@ -4,7 +4,7 @@ name: Deploy
 #   CI (ci.yml: lint, type-check, unit tests) green on main
 #     -> build & push the image once (tagged with the commit SHA, deployed by digest)
 #     -> deploy staging (sandbox Workspace account), authenticated smoke test
-#     -> release gate: fixture-set E2E against the sandbox account (Task 24)
+#     -> release gate: fixture-set E2E against the sandbox account (Task 24), fail-closed
 #     -> deploy production: the same digest, after approval on the "production" Environment
 #
 # Deploys are `gcloud run services update --image`, not `terraform apply -target`:
@@ -155,9 +155,17 @@ jobs:
   # deploy because staging is bound to the same sandbox account and the suite exercises
   # the deployed pipeline.
   release-gate:
+    # Runs the 32-pair fixture suite live against the sandbox account (Task 24): seeds the
+    # sandbox inbox, runs the pipeline of this commit twice against a fresh ledger and
+    # folder, and checks every row, file, label and draft against the answer key.
+    # Fail-closed: a skipped or partial suite fails the gate (KIBIT_E2E_REQUIRED=1,
+    # --require-run). Cost per release: ~10 minutes and ~64 AI Compass calls.
     needs: [build-and-push, deploy-staging]
     runs-on: ubuntu-latest
     environment: staging
+    timeout-minutes: 45
+    env:
+      STAGING_JOB: kibit-intake-poll-staging
     steps:
       - uses: actions/checkout@v4
         with:
@@ -171,21 +179,38 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.CI_E2E_SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@v2
+      # The staging service polls the same sandbox inbox every 10 minutes. Left running,
+      # it would book the seeded fixture emails into the demo ledger mid-suite.
+      - id: pause
+        name: Pause the staging scheduler during the suite
+        run: |
+          set -euo pipefail
+          state="$(gcloud scheduler jobs describe "$STAGING_JOB" --location="$GCP_REGION" --project="$GCP_PROJECT_ID" --format='value(state)')"
+          echo "state=${state}" >> "$GITHUB_OUTPUT"
+          echo "staging scheduler was ${state}"
+          if [ "$state" = "ENABLED" ]; then
+            gcloud scheduler jobs pause "$STAGING_JOB" --location="$GCP_REGION" --project="$GCP_PROJECT_ID"
+          fi
       - name: Fixture-set E2E against the sandbox account
         env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
           ENVIRONMENT: staging
-          LEDGER_SPREADSHEET_ID: ${{ vars.LEDGER_SPREADSHEET_ID }}
-          DRIVE_ROOT_FOLDER_ID: ${{ vars.DRIVE_ROOT_FOLDER_ID }}
           EXTRACTOR_BACKEND: ai_compass
-          STAGING_SERVICE_URL: ${{ needs.deploy-staging.outputs.url }}
-        run: pytest tests/e2e/fixture_set -v
+          KIBIT_E2E_REQUIRED: "1"
+          KIBIT_E2E_RESULTS_DIR: e2e-results
+        run: pytest -m e2e tests/e2e/fixture_set -v -rs -p no:cacheprovider
       - name: Assert zero wrong rows, files and labels
-        env:
-          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          ENVIRONMENT: staging
-          LEDGER_SPREADSHEET_ID: ${{ vars.LEDGER_SPREADSHEET_ID }}
-        run: python scripts/verify_fixture_answer_key.py --strict
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          results=(e2e-results/*.json)
+          if [ "${#results[@]}" -ne 1 ]; then
+            echo "expected exactly one E2E results file, found ${#results[@]}"; exit 1
+          fi
+          python scripts/verify_fixture_answer_key.py --strict --require-run --results "${results[0]}"
+      - name: Resume the staging scheduler
+        if: always() && steps.pause.outputs.state == 'ENABLED'
+        run: gcloud scheduler jobs resume "$STAGING_JOB" --location="$GCP_REGION" --project="$GCP_PROJECT_ID"
 
   deploy-production:
     needs: [build-and-push, release-gate]

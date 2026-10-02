@@ -118,3 +118,25 @@ resource "google_secret_manager_secret_iam_member" "ci_e2e_staging_access" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.ci_e2e.email}"
 }
+
+# The release gate pauses the staging Scheduler job while the E2E suite seeds the sandbox
+# inbox, so the staging service can't book the fixture emails into the demo ledger, then
+# resumes it. A custom role keeps this to describe/pause/resume; Cloud Scheduler has no
+# per-job IAM, so the grant is project-wide (the workflow only touches the staging job).
+resource "google_project_iam_custom_role" "scheduler_pauser" {
+  project     = var.project_id
+  role_id     = "kibitSchedulerPauser"
+  title       = "Kibit Scheduler pause/resume (CI release gate)"
+  description = "Describe, pause and resume Cloud Scheduler jobs."
+  permissions = [
+    "cloudscheduler.jobs.get",
+    "cloudscheduler.jobs.pause",
+    "cloudscheduler.jobs.enable",
+  ]
+}
+
+resource "google_project_iam_member" "ci_e2e_scheduler_pauser" {
+  project = var.project_id
+  role    = google_project_iam_custom_role.scheduler_pauser.id
+  member  = "serviceAccount:${google_service_account.ci_e2e.email}"
+}

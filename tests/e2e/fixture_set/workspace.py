@@ -11,6 +11,7 @@ import base64
 import dataclasses
 import hashlib
 import logging
+import os
 import sys
 import threading
 from collections.abc import Mapping, Sequence
@@ -18,10 +19,14 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
+import pytest
+
+from intake.__main__ import TOKEN_FILE
+from intake.clients.auth import ENVIRONMENT_ENV, PROJECT_ID_ENV
 from intake.config import Config
-from intake.extraction import DocumentKind, Extractor
+from intake.extraction import AI_COMPASS_API_KEY_ENV, DocumentKind, Extractor
 from intake.models import InvoiceExtraction, StageResult
 from intake.pipeline.orchestrator import RunSummary
 from intake.pipeline.runtime import build_extractor, build_service
@@ -47,6 +52,37 @@ DRAFT = "DRAFT"
 # Reads only (never inserts): googleapiclient retries 429/5xx and 403 rateLimitExceeded
 # with exponential backoff. The sandbox mailbox's per-minute Gmail quota is easy to hit.
 READ_RETRIES = 6
+
+# Set by the release gate: anything that would skip the suite fails it instead, so a
+# gate that ran nothing can never pass.
+REQUIRED_ENV = "KIBIT_E2E_REQUIRED"
+
+
+def unavailable(reason: str) -> NoReturn:
+    """Skip the live suite, or fail it when ``KIBIT_E2E_REQUIRED=1`` (release gate)."""
+    if os.environ.get(REQUIRED_ENV) == "1":
+        pytest.fail(f"E2E suite required but unavailable: {reason}")
+    pytest.skip(reason)
+
+
+def credential_source(env: Mapping[str, str], secrets_dir: Path) -> str | None:
+    """``"token"`` (local ``token.json``), ``"secret_manager"`` (CI) or ``None``.
+
+    In CI the sandbox OAuth credentials come from Secret Manager, the same way the
+    deployed staging service reads them (``GCP_PROJECT_ID`` + ``ENVIRONMENT``).
+    """
+    if (secrets_dir / TOKEN_FILE).is_file():
+        return "token"
+    if env.get(PROJECT_ID_ENV) and env.get(ENVIRONMENT_ENV):
+        return "secret_manager"
+    return None
+
+
+def ai_compass_key_available(env: Mapping[str, str]) -> bool:
+    """A local key, or a project + environment to read it from Secret Manager."""
+    if env.get(AI_COMPASS_API_KEY_ENV, "").strip():
+        return True
+    return bool(env.get(PROJECT_ID_ENV) and env.get(ENVIRONMENT_ENV))
 
 
 @dataclass(frozen=True, slots=True)
