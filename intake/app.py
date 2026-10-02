@@ -8,6 +8,12 @@
   "awaiting_tig", "errors", "skipped"}}``. A run that fails before processing candidates
   (Config, Ledger header, credentials, polling) answers 500 with only the error type.
 
+Logging (``intake.observability.logging``): importing this module configures logging,
+JSON for Cloud Logging on Cloud Run. Each authorised ``/run`` is one ``run_scope`` (all
+its records share a ``run_id``) inside the request's trace (``X-Cloud-Trace-Context``),
+and ends with ``event=run_completed`` (INFO) or ``event=run_failed`` (ERROR, with the
+error type and a message-free stack trace for Error Reporting).
+
 Served by gunicorn (see ``Dockerfile``): ``gunicorn intake.app:app``.
 """
 
@@ -22,6 +28,7 @@ from google.auth.exceptions import GoogleAuthError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 
+from intake.observability.logging import configure_logging, run_scope, trace_scope
 from intake.pipeline.orchestrator import RunSummary
 from intake.pipeline.runtime import run_from_env
 
@@ -108,12 +115,17 @@ def create_app(
     verifier: TokenVerifier | None = None,
     env: Mapping[str, str] | None = None,
     runner: PipelineRunner | None = None,
+    *,
+    configure: bool = False,
 ) -> Flask:
     """Build the WSGI app. ``verifier``, ``env`` and ``runner`` are injectable for tests.
 
     The default ``runner`` builds the real clients from ``env`` on every request.
+    ``configure`` installs the process-wide logging handler (the served app does).
     """
     environment = os.environ if env is None else env
+    if configure:
+        configure_logging(env=environment)
     settings = oidc_settings_from_env(environment)
     verify = verifier or verify_google_oidc_token
 
@@ -131,16 +143,23 @@ def create_app(
     def run() -> tuple[Response, int]:
         if not is_authorized(request.headers.get("Authorization"), settings, verify):
             return _unauthorized()
-        try:
-            summary = run_pipeline().to_dict()
-        except Exception as exc:
-            # Only the type: messages may carry sheet/document values.
-            logger.error("POST /run failed", extra={"error_type": type(exc).__name__})
-            return jsonify({"status": "error", "error": type(exc).__name__}), 500
-        logger.info("POST /run completed", extra={"summary": summary})
-        return jsonify({"status": "ok", "summary": summary}), 200
+        trace = request.headers.get("X-Cloud-Trace-Context")
+        with trace_scope(trace, request.headers.get("traceparent")), run_scope():
+            try:
+                summary = run_pipeline().to_dict()
+            except Exception as exc:
+                # Only the type: messages may carry sheet/document values.
+                logger.error(
+                    "POST /run failed (%s)",
+                    type(exc).__name__,
+                    exc_info=True,
+                    extra={"event": "run_failed", "error_type": type(exc).__name__},
+                )
+                return jsonify({"status": "error", "error": type(exc).__name__}), 500
+            logger.info("POST /run completed", extra={"event": "run_completed"})
+            return jsonify({"status": "ok", "summary": summary}), 200
 
     return app
 
 
-app = create_app()
+app = create_app(configure=True)

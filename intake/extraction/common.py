@@ -397,12 +397,20 @@ def response_sha256(text: str | None) -> str:
 
 
 def rejected(
-    detail: str, *, logger: logging.Logger, log_fields: Mapping[str, object]
+    detail: str,
+    *,
+    logger: logging.Logger,
+    log_fields: Mapping[str, object],
+    reason: str = "invalid_response",
 ) -> StageResult[InvoiceExtraction]:
-    """``incomplete`` with no value: nothing partial goes downstream."""
+    """``incomplete`` with no value: nothing partial goes downstream.
+
+    ``detail`` goes to the caller only; it can quote model output (e.g. unexpected JSON
+    keys), so the log carries the fixed ``reason`` code instead.
+    """
     logger.warning(
         "extraction response rejected",
-        extra={**log_fields, "outcome": "invalid_response", "detail": detail},
+        extra={**log_fields, "outcome": "invalid_response", "reason": reason},
     )
     return StageResult.incomplete(FlagReason.INCOMPLETE_DATA, detail)
 
@@ -436,7 +444,7 @@ def interpret_response(
         detail = f"missing required field(s): {', '.join(missing)}"
         logger.info(
             "extraction incomplete",
-            extra={**log_fields, "outcome": "incomplete", "detail": detail},
+            extra={**log_fields, "outcome": "incomplete", "missing_fields": ",".join(missing)},
         )
         return StageResult[InvoiceExtraction](
             StageStatus.INCOMPLETE,

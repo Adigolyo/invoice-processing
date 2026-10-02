@@ -318,7 +318,7 @@ def test_non_builtin_exception_type_is_module_qualified() -> None:
         pass
 
     stack = safe_stack_trace(LedgerError(SUPPLIER))
-    assert stack.strip().endswith(f"{__name__}.LedgerError")
+    assert stack.strip().endswith(f"{__name__}.{LedgerError.__qualname__}")
 
 
 def test_message_args_are_rendered_but_exception_text_is_not_appended() -> None:
@@ -357,12 +357,12 @@ def test_run_scope_accepts_an_explicit_id() -> None:
         (
             "105445aa7843bc8bf206b12000100000/1;o=1",
             None,
-            ("105445aa7843bc8bf206b12000100000", "1", True),
+            ("105445aa7843bc8bf206b12000100000", "0000000000000001", True),
         ),
         (
             "105445aa7843bc8bf206b12000100000/77;o=0",
             None,
-            ("105445aa7843bc8bf206b12000100000", "77", False),
+            ("105445aa7843bc8bf206b12000100000", "000000000000004d", False),
         ),
         (
             "105445aa7843bc8bf206b12000100000",
@@ -395,7 +395,7 @@ def test_trace_fields_only_when_a_trace_header_exists() -> None:
     assert payload["logging.googleapis.com/trace"] == (
         "projects/kibit-proj/traces/105445aa7843bc8bf206b12000100000"
     )
-    assert payload["logging.googleapis.com/spanId"] == "1"
+    assert payload["logging.googleapis.com/spanId"] == "0000000000000001"
     assert payload["logging.googleapis.com/trace_sampled"] is True
     assert "logging.googleapis.com/trace" not in no_project  # needs the project ID
 
