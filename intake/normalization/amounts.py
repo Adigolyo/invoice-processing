@@ -21,7 +21,9 @@ of exactly 3). A single ``,`` or ``.`` followed by anything other than exactly t
 digits is a decimal separator. A single ``,`` or ``.`` followed by exactly three digits
 after a 1-3 digit leading group (``1.234``, ``12,345``) reads equally well as a
 thousands separator (US or Hungarian-dot) and as a decimal separator, so it is
-**flagged as ambiguous**, never guessed (AC5).
+**flagged as ambiguous**, never guessed (AC5) -- unless the resolved currency is a
+whole-number currency (HUF): forint amounts have no fractional part, so for
+``currency_iso="HUF"`` that separator is read as thousands (``1.234 Ft`` = 1234).
 
 Also accepted, because each has exactly one reading:
 
@@ -71,6 +73,10 @@ from intake.normalization.result import NormalizationFailure
 
 AMOUNT_FIELDS: Final = ("net", "gross")
 
+# Currencies booked without a fractional part. For these a lone separator followed by
+# exactly three digits is a thousands separator, and amounts round to integers.
+WHOLE_NUMBER_CURRENCIES: Final = frozenset({"HUF"})
+
 HU_DECIMAL_SEPARATOR: Final = ","
 HU_THOUSANDS_SEPARATOR: Final = " "  # CLDR "hu": no-break space
 
@@ -111,7 +117,9 @@ def _split(body: str) -> tuple[list[str], list[str]]:
     return groups, separators
 
 
-def _parse_body(raw: str, body: str, whole_marker: str | None) -> Decimal | NormalizationFailure:
+def _parse_body(
+    raw: str, body: str, whole_marker: str | None, *, whole_number_currency: bool
+) -> Decimal | NormalizationFailure:
     """Classify the separators of a sign- and currency-free numeric body."""
     groups, separators = _split(body)
     if any(not group for group in groups):
@@ -140,6 +148,8 @@ def _parse_body(raw: str, body: str, whole_marker: str | None) -> Decimal | Norm
         else:
             head, tail = groups
             if len(tail) == 3 and _valid_grouping(groups):
+                if whole_number_currency:
+                    return Decimal(head + tail)
                 return NormalizationFailure(
                     f"amount {raw!r} is ambiguous: {last!r} could be a thousands "
                     "or a decimal separator"
@@ -156,8 +166,15 @@ def _parse_body(raw: str, body: str, whole_marker: str | None) -> Decimal | Norm
     return Decimal(f"{digits}.{fraction}" if fraction else digits)
 
 
-def normalize_amount(raw: str | None) -> Decimal | NormalizationFailure:
-    """Parse one extracted amount into an exact ``Decimal``; flag, never guess."""
+def normalize_amount(
+    raw: str | None, *, currency_iso: str | None = None
+) -> Decimal | NormalizationFailure:
+    """Parse one extracted amount into an exact ``Decimal``; flag, never guess.
+
+    ``currency_iso`` is the resolved ISO code (``to_iso_code`` output). Only a
+    whole-number currency (HUF) changes the result: it resolves the ``1.234`` ambiguity
+    as thousands. Unresolved or other currencies keep the ambiguity flag.
+    """
     if raw is None or not raw.strip():
         return NormalizationFailure("amount is missing")
     match = _AMOUNT.fullmatch(raw.strip())
@@ -169,7 +186,12 @@ def normalize_amount(raw: str | None) -> Decimal | NormalizationFailure:
         return NormalizationFailure(f"unexpected text around amount {raw!r}")
 
     whole = match["whole"]
-    result = _parse_body(raw, match["body"], whole[0] if whole else None)
+    result = _parse_body(
+        raw,
+        match["body"],
+        whole[0] if whole else None,
+        whole_number_currency=currency_iso in WHOLE_NUMBER_CURRENCIES,
+    )
     if isinstance(result, NormalizationFailure):
         return result
     if match["sign"] and result:
@@ -219,7 +241,9 @@ class NormalizedAmounts:
         return result
 
 
-def normalize_amounts(extraction: InvoiceExtraction) -> NormalizedAmounts:
+def normalize_amounts(
+    extraction: InvoiceExtraction, *, currency_iso: str | None = None
+) -> NormalizedAmounts:
     """Normalise every header amount independently with the same rule set."""
     values: dict[str, AmountValue] = {}
     for name in AMOUNT_FIELDS:
@@ -227,14 +251,11 @@ def normalize_amounts(extraction: InvoiceExtraction) -> NormalizedAmounts:
         if raw is None:
             values[name] = None
             continue
-        result = normalize_amount(raw)
+        result = normalize_amount(raw, currency_iso=currency_iso)
         if isinstance(result, NormalizationFailure):
             result = dataclasses.replace(result, field=name)
         values[name] = result
     return NormalizedAmounts(**values)
-
-
-WHOLE_NUMBER_CURRENCIES: Final = frozenset({"HUF"})
 
 
 def _is_resolved_iso_code(currency_iso: str | None) -> bool:
