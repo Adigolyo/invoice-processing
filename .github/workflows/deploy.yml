@@ -1,0 +1,199 @@
+name: Deploy
+
+# Deploy stages of the factory's cicd-pipeline.yml, adapted to this repo (Task 22):
+#   CI (ci.yml: lint, type-check, unit tests) green on main
+#     -> build & push the image once (tagged with the commit SHA, deployed by digest)
+#     -> deploy staging (sandbox Workspace account), authenticated smoke test
+#     -> release gate: fixture-set E2E against the sandbox account (Task 24)
+#     -> deploy production: the same digest, after approval on the "production" Environment
+#
+# Deploys are `gcloud run services update --image`, not `terraform apply -target`:
+# Terraform owns everything else and ignores the image (infra/cloudrun.tf), so CI needs no
+# Terraform state access and no tfvars. See docs/deployment.md.
+#
+# Repository variables (Settings -> Secrets and variables -> Actions -> Variables):
+#   GCP_PROJECT_ID, WIF_PROVIDER, CI_DEPLOYER_SA_EMAIL, CI_E2E_SA_EMAIL
+# "staging" Environment variables: LEDGER_SPREADSHEET_ID, DRIVE_ROOT_FOLDER_ID (sandbox)
+# "production" Environment: required reviewers (the pipeline's only manual gate).
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation (keyless auth)
+
+# Never two deploys at once; a newer run waits instead of cancelling a deploy mid-way.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  GCP_REGION: europe-west1
+  AR_REPO: kibit-intake
+  IMAGE_NAME: intake-service
+
+jobs:
+  build-and-push:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit CI just validated, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+      - id: push
+        name: Build and push (tag = commit SHA, output = digest reference)
+        run: |
+          SHA="$(git rev-parse HEAD)"
+          REPO="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${AR_REPO}/${IMAGE_NAME}"
+          docker build --pull -t "${REPO}:${SHA}" .
+          docker push "${REPO}:${SHA}"
+          DIGEST="$(docker inspect --format='{{index .RepoDigests 0}}' "${REPO}:${SHA}")"
+          echo "image=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "Pushed ${DIGEST}"
+
+  deploy-staging:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - id: deploy
+        name: Deploy the new image
+        run: |
+          SERVICE=kibit-intake-staging
+          gcloud run services update "$SERVICE" --region="$GCP_REGION" \
+            --image="${{ needs.build-and-push.outputs.image }}" --quiet
+          # Undo any manual traffic pin from a rollback: serve the new revision.
+          gcloud run services update-traffic "$SERVICE" --region="$GCP_REGION" --to-latest --quiet
+          URL="$(gcloud run services describe "$SERVICE" --region="$GCP_REGION" --format='value(status.url)')"
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+      # The service is IAM-protected (no allUsers), so the smoke test needs an identity
+      # token. The CI deployer holds run.invoker on the service for exactly this.
+      - id: idtoken
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.deploy.outputs.url }}
+          id_token_include_email: true
+      - name: Smoke test (authenticated)
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          ID_TOKEN: ${{ steps.idtoken.outputs.id_token }}
+        run: |
+          set -euo pipefail
+          code() { curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors "$@"; }
+          healthz="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/healthz")"
+          echo "GET /healthz with token: ${healthz} (want 200)"; [ "$healthz" = 200 ]
+          anon="$(code "${URL}/healthz")"
+          echo "GET /healthz without token: ${anon} (want 401/403 from Cloud Run IAM)"
+          case "$anon" in 401|403) ;; *) exit 1 ;; esac
+          run="$(code -X POST -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/run")"
+          echo "POST /run as CI deployer: ${run} (want 401, app accepts only the Scheduler SA)"
+          [ "$run" = 401 ]
+
+  # Release gate: the 10-invoice fixture set against the SANDBOX account must match the
+  # answer key exactly before production is touched (tests/e2e/fixture_set and
+  # scripts/verify_fixture_answer_key.py are owned by Task 24). Runs after the staging
+  # deploy because staging is bound to the same sandbox account and the suite exercises
+  # the deployed pipeline.
+  release-gate:
+    needs: [build-and-push, deploy-staging]
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_E2E_SA_EMAIL }}
+      - name: Fixture-set E2E against the sandbox account
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          ENVIRONMENT: staging
+          LEDGER_SPREADSHEET_ID: ${{ vars.LEDGER_SPREADSHEET_ID }}
+          DRIVE_ROOT_FOLDER_ID: ${{ vars.DRIVE_ROOT_FOLDER_ID }}
+          EXTRACTOR_BACKEND: ai_compass
+          STAGING_SERVICE_URL: ${{ needs.deploy-staging.outputs.url }}
+        run: pytest tests/e2e/fixture_set -v
+      - name: Assert zero wrong rows, files and labels
+        env:
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          ENVIRONMENT: staging
+          LEDGER_SPREADSHEET_ID: ${{ vars.LEDGER_SPREADSHEET_ID }}
+        run: python scripts/verify_fixture_answer_key.py --strict
+
+  deploy-production:
+    needs: [build-and-push, release-gate]
+    runs-on: ubuntu-latest
+    environment: production # required reviewers configured on this Environment
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - id: deploy
+        name: Promote the digest validated in staging
+        run: |
+          SERVICE=kibit-intake-production
+          gcloud run services update "$SERVICE" --region="$GCP_REGION" \
+            --image="${{ needs.build-and-push.outputs.image }}" --quiet
+          gcloud run services update-traffic "$SERVICE" --region="$GCP_REGION" --to-latest --quiet
+          URL="$(gcloud run services describe "$SERVICE" --region="$GCP_REGION" --format='value(status.url)')"
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+      - id: idtoken
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_DEPLOYER_SA_EMAIL }}
+          token_format: id_token
+          id_token_audience: ${{ steps.deploy.outputs.url }}
+          id_token_include_email: true
+      - name: Smoke test (authenticated)
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+          ID_TOKEN: ${{ steps.idtoken.outputs.id_token }}
+        run: |
+          set -euo pipefail
+          code() { curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-all-errors "$@"; }
+          healthz="$(code -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/healthz")"
+          echo "GET /healthz with token: ${healthz} (want 200)"; [ "$healthz" = 200 ]
+          anon="$(code "${URL}/healthz")"
+          echo "GET /healthz without token: ${anon} (want 401/403 from Cloud Run IAM)"
+          case "$anon" in 401|403) ;; *) exit 1 ;; esac
+          run="$(code -X POST -H "Authorization: Bearer ${ID_TOKEN}" "${URL}/run")"
+          echo "POST /run as CI deployer: ${run} (want 401, app accepts only the Scheduler SA)"
+          [ "$run" = 401 ]

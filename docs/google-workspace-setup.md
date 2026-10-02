@@ -287,10 +287,9 @@ gcloud secrets versions add kibit-gemini-api-key-staging    --data-file=- <<< "$
 gcloud secrets versions add kibit-gemini-api-key-production --data-file=- <<< "$GEMINI_API_KEY_PRODUCTION"
 ```
 
-The `kibit-ai-compass-api-key-<env>` secret container is not in the design's Terraform
-yet (the design assumed Gemini); create it with `gcloud secrets create` and grant the
-service account `roles/secretmanager.secretAccessor` on it until the infrastructure is
-updated.
+All these secret containers, including `kibit-ai-compass-api-key-<env>`, and their
+accessor bindings are created by `infra/secrets.tf`. The full ordered procedure is in
+[deployment.md](deployment.md), step 3.
 
 To get the bare refresh token out of `token.json`:
 `python -c "import json;print(json.load(open('secrets/token.json'))['refresh_token'])"`.

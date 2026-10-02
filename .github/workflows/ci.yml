@@ -1,7 +1,7 @@
 name: CI
 
-# Lint + unit-test stages of the factory's cicd-pipeline.yml. Integration, E2E and
-# deploy stages are added by later tasks (22, 24).
+# Lint + unit-test stages of the factory's cicd-pipeline.yml. Build, deploy and the
+# fixture-set release gate run after this workflow succeeds on main (deploy.yml).
 
 on:
   push:

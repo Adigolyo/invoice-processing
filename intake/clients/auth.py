@@ -6,7 +6,7 @@ client secret that minted it are read from Secret Manager as well (the factory d
 are silent on where they live; keeping them next to the refresh token is the assumption).
 
 Secret names follow the factory's per-environment convention
-(``kibit-oauth-refresh-token-{env}``); see ``infra/iam.tf``.
+(``kibit-oauth-refresh-token-{env}``); see ``infra/secrets.tf``.
 """
 
 import logging

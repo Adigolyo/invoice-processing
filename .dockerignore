@@ -1,0 +1,19 @@
+# Only requirements.txt and intake/ are copied into the image; keep the build context small
+# and keep local credentials out of it.
+.git
+.venv
+.claude
+.cursor
+secrets
+.env
+infra
+docs
+tests
+scripts
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage.xml

@@ -1,0 +1,15 @@
+# Copy to infra/terraform.tfvars (gitignored) and fill in. No secret values belong here.
+project_id         = "kibit-invoice-intake"
+github_repository  = "<owner>/<repo>"
+billing_account_id = "" # "XXXXXX-XXXXXX-XXXXXX" to create the budget; needs billing-account rights
+monthly_budget_usd = 80
+
+ledger_spreadsheet_ids = {
+  staging    = "<sandbox-ledger-spreadsheet-id>"
+  production = "<production-ledger-spreadsheet-id>"
+}
+
+drive_root_folder_ids = {
+  staging    = "<sandbox-invoices-folder-id>"
+  production = "<production-invoices-folder-id>"
+}

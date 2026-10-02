@@ -140,8 +140,8 @@ def test_environment_and_project_are_wired_per_environment() -> None:
 
 
 def test_both_environments_are_defined() -> None:
-    locals_body = _block(_read("main.tf"), "locals")
-    environments = _block(locals_body, "environments")
+    locals_body = _block(_read("main.tf"), "\nlocals {")
+    environments = _block(locals_body, "environments = {")
     for name in ENVIRONMENTS:
         assert re.search(rf"^\s*{name}\s*=\s*\{{", environments, re.MULTILINE), name
 
@@ -190,9 +190,9 @@ def test_request_timeout_fits_a_full_run_and_matches_gunicorn() -> None:
 
 def test_scheduler_cannot_create_overlapping_runs() -> None:
     job = _block(_read("scheduler.tf"), 'resource "google_cloud_scheduler_job" "poll"')
-    deadline = re.search(r'attempt_deadline\s*=\s*"(\d+)s"', job)
+    deadline = re.search(r'attempt_deadline\s*=\s*"\$\{var\.(\w+)\}s"', job)
     assert deadline, "attempt_deadline missing"
-    seconds = int(deadline.group(1))
+    seconds = int(_variable_default(deadline.group(1)))
     assert seconds <= SCHEDULER_MAX_ATTEMPT_DEADLINE_S
     assert seconds <= int(_variable_default("request_timeout_seconds"))
     assert re.search(r"retry_count\s*=\s*0\b", _block(job, "retry_config"))

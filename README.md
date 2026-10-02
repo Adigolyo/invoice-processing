@@ -108,8 +108,11 @@ The fixture-set end-to-end suite runs against the sandbox account:
 **Run locally:** TODO. The specification doesn't give a local run command yet. The
 service exposes `POST /run` and `GET /healthz`.
 
-**Deploy:** CI deploys to staging automatically from `main`. Production is a gated
-manual promotion. See the factory's `deployment-runbook.md`.
+**Deploy:** Terraform in `infra/` provisions Cloud Run, Cloud Scheduler, Secret Manager
+and CI identities. `.github/workflows/deploy.yml` deploys to staging automatically when CI
+is green on `main`. Production is promoted after the fixture-set release gate and a
+reviewer's approval. The ordered runbook (bootstrap, secrets, smoke test, rollback) is
+[docs/deployment.md](docs/deployment.md).
 
 ## Specification
 
