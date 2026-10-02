@@ -32,6 +32,9 @@ from intake.ledger import DuplicateCheckError, DuplicateGate, dedupe_key, is_dup
 # --- fakes --------------------------------------------------------------------
 
 
+_UNSET: Any = object()
+
+
 class FakeLedger:
     """Stands in for ``SheetsClient``: a live, mutable set of ledger keys.
 
@@ -43,13 +46,13 @@ class FakeLedger:
         self.keys: set[tuple[str, str]] = set(keys or ())
         self.reads = 0
         self.error: Exception | None = None
-        self.result_override: Any = None
+        self.result_override: Any = _UNSET
 
     def load_existing_keys(self) -> set[tuple[str, str]]:
         self.reads += 1
         if self.error is not None:
             raise self.error
-        if self.result_override is not None:
+        if self.result_override is not _UNSET:
             result: set[tuple[str, str]] = self.result_override
             return result
         return set(self.keys)
