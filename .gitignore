@@ -19,3 +19,6 @@ coverage.xml
 
 # Kit archive
 software-factory-invoice-processing.zip
+
+# Agent worktrees
+.claude/worktrees/

@@ -1,6 +1,6 @@
 target-version = "py312"
 line-length = 100
-extend-exclude = ["docs"]
+extend-exclude = ["docs", ".claude"]
 
 [lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
