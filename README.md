@@ -23,8 +23,8 @@ A single Python service ("the Intake Service", a modular monolith) runs on **Clo
 Each run loads its configuration from the ledger sheet's `Config` tab and lists the
 candidate Gmail messages. It then processes them **one at a time** through this pipeline:
 
-Classify → Extract (Gemini) → Normalize → [TIG route: Reconcile] → Assign registry
-number → File to Drive → Book to ledger → Label.
+Classify → Extract (Claude via AI Compass) → Normalize → [TIG route: Reconcile] →
+Assign registry number → File to Drive → Book to ledger → Label.
 
 There is no database. Gmail labels hold the processing state, Drive holds the files, and
 Sheets holds the ledger. All three are read live on every run, so a run can safely be
@@ -45,7 +45,7 @@ flowchart TB
     subgraph Run[Intake Service on Cloud Run]
         Orchestrator[Pipeline Orchestrator]
         Classify[Inbox Poll & Route Classifier]
-        Extract[Gemini Extractor + Normalizers]
+        Extract[Extractor + Normalizers]
         Reconcile[TIG Matcher & Draft Composer]
         Registry[Registry Number & Drive Filing]
         Ledger[Ledger Writer & Dedupe]
@@ -55,7 +55,7 @@ flowchart TB
     end
     Classify --> Gmail[(Gmail)]
     Reconcile --> Gmail
-    Extract --> Gemini[[Gemini API]]
+    Extract --> Compass[[AI Compass gateway: Claude Sonnet 5.5]]
     Registry --> Drive[(Drive)]
     Ledger --> Sheets[(Sheets: Ledger + Config)]
     Secrets[(Secret Manager)] -.-> Run
@@ -63,8 +63,16 @@ flowchart TB
 
 ## Tech stack
 
-- Python 3.12: `google-api-python-client`, `google-genai`, `babel`, `python-dateutil`
-- Gemini, called behind an `Extractor` interface, for multimodal extraction
+- Python 3.12: `google-api-python-client`, `anthropic`, `google-genai`, `babel`, `python-dateutil`
+- Multimodal extraction behind an `Extractor` interface, chosen by `EXTRACTOR_BACKEND`:
+  - `ai_compass` (default): Claude Sonnet 5.5 through Kibit's AI Compass gateway (a LiteLLM
+    proxy exposing the Anthropic Messages API). Configured by `AI_COMPASS_BASE_URL`
+    (default `https://ai-compass.kibit.cloud`), `AI_COMPASS_MODEL` (default
+    `claude-sonnet-5-5`), `AI_COMPASS_EFFORT` (default `medium`) and the key
+    `AI_COMPASS_API_KEY`, or, when that is unset, the Secret Manager secret
+    `kibit-ai-compass-api-key-<ENVIRONMENT>` in `GCP_PROJECT_ID`.
+  - `gemini` (optional): `GEMINI_MODEL`, `GEMINI_API_KEY` /
+    `kibit-gemini-api-key-<ENVIRONMENT>`. Only needed when this backend is selected.
 - Google Cloud: Cloud Run, Cloud Scheduler, Secret Manager, Artifact Registry, Cloud
   Logging / Error Reporting / Monitoring, all in `europe-west1`
 - Terraform for infrastructure, GitHub Actions for CI/CD

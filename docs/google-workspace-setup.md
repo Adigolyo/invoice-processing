@@ -8,8 +8,9 @@ This guide sets up the Google credentials the pipeline needs to:
 - **Sheets:** read the ledger (duplicate check) and append rows (columns A–H).
 
 > **The technical design has chosen Path A.** It's a Python 3.12 service on Cloud Run
-> using an OAuth "installed app" refresh token stored in Secret Manager, with Gemini for
-> extraction. Do Steps 0–3, then Path A, then Step 4. Paths B and C are kept only for
+> using an OAuth "installed app" refresh token stored in Secret Manager. Extraction uses
+> Claude Sonnet 5.5 through Kibit's AI Compass gateway (Gemini is an optional
+> alternative backend). Do Steps 0–3, then Path A, then Step 4. Paths B and C are kept only for
 > reference.
 
 **Do everything twice: once for the sandbox account, once for production.** The design
@@ -93,9 +94,11 @@ guide.)
 
    Copy its **spreadsheet ID** from the URL:
    `https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit`.
-4. **Gemini API key.** Create one key per environment in
-   [Google AI Studio](https://aistudio.google.com/apikey) or under the GCP project's
-   Generative Language API. It's stored in Secret Manager (Step 4).
+4. **AI Compass API key.** Get one key per environment for Kibit's AI Compass gateway
+   (`https://ai-compass.kibit.cloud`). It's stored in Secret Manager (Step 4).
+   *Optional:* a Gemini API key, only if you run with `EXTRACTOR_BACKEND=gemini`; create
+   it in [Google AI Studio](https://aistudio.google.com/apikey) or under the GCP project's
+   Generative Language API.
 
 The Terraform setup needs these IDs as `ledger_spreadsheet_ids` and
 `drive_root_folder_ids`, each with `staging` and `production` values.
@@ -276,9 +279,18 @@ for ENV in staging production; do
   gcloud secrets versions add kibit-oauth-client-secret-$ENV --data-file=- <<< "$(python3 -c "import json;print(json.load(open('secrets/client_secret.json'))['installed']['client_secret'])")"
 done
 
+gcloud secrets versions add kibit-ai-compass-api-key-staging    --data-file=- <<< "$AI_COMPASS_API_KEY_STAGING"
+gcloud secrets versions add kibit-ai-compass-api-key-production --data-file=- <<< "$AI_COMPASS_API_KEY_PRODUCTION"
+
+# Optional: only when running with EXTRACTOR_BACKEND=gemini
 gcloud secrets versions add kibit-gemini-api-key-staging    --data-file=- <<< "$GEMINI_API_KEY_STAGING"
 gcloud secrets versions add kibit-gemini-api-key-production --data-file=- <<< "$GEMINI_API_KEY_PRODUCTION"
 ```
+
+The `kibit-ai-compass-api-key-<env>` secret container is not in the design's Terraform
+yet (the design assumed Gemini); create it with `gcloud secrets create` and grant the
+service account `roles/secretmanager.secretAccessor` on it until the infrastructure is
+updated.
 
 To get the bare refresh token out of `token.json`:
 `python -c "import json;print(json.load(open('secrets/token.json'))['refresh_token'])"`.
@@ -302,7 +314,12 @@ GOOGLE_CLIENT_SECRET_FILE=secrets/client_secret.json
 GOOGLE_TOKEN_FILE=secrets/token.json
 GOOGLE_SERVICE_ACCOUNT_FILE=secrets/service-account.json
 GOOGLE_IMPERSONATE_USER=invoices@<your-domain>
-GEMINI_API_KEY=<sandbox key>
+EXTRACTOR_BACKEND=ai_compass               # ai_compass (default) | gemini
+AI_COMPASS_API_KEY=<sandbox key>
+AI_COMPASS_BASE_URL=https://ai-compass.kibit.cloud
+AI_COMPASS_MODEL=claude-sonnet-5-5
+AI_COMPASS_EFFORT=medium                   # low | medium | high | xhigh | max
+# GEMINI_API_KEY=<sandbox key>             # only for EXTRACTOR_BACKEND=gemini
 DRIVE_ROOT_FOLDER_ID=<FOLDER_ID>
 LEDGER_SPREADSHEET_ID=<SPREADSHEET_ID>
 LEDGER_SHEET_NAME=Ledger
