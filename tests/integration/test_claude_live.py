@@ -88,7 +88,9 @@ def _line_mismatches(
             ("net", _decimal(want["net"])),
         ):
             if getattr(got, field) != wanted:
-                problems.append(f"{where}.lines[{index}].{field}: {getattr(got, field)} != {wanted}")
+                problems.append(
+                    f"{where}.lines[{index}].{field}: {getattr(got, field)} != {wanted}"
+                )
     return problems
 
 

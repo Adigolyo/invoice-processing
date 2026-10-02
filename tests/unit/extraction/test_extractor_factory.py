@@ -12,9 +12,10 @@ from intake.extraction import (
     ClaudeExtractor,
     Extractor,
     GeminiExtractor,
+    claude_extractor,
     extractor_from_env,
+    gemini_extractor,
 )
-from intake.extraction import claude_extractor, gemini_extractor
 from tests.unit.extraction.backends import FakeClaudeClient, FakeGeminiClient
 
 

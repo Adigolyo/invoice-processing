@@ -57,7 +57,12 @@ PAYLOAD: dict[str, Any] = {
     "supply_date": None,
     "performance_date": "2026.10.05.",
     "line_items": [
-        {"description": "Nyomdai", "quantity": "1 200 db", "unit_price": "60 Ft", "net": "72 000 Ft"}
+        {
+            "description": "Nyomdai",
+            "quantity": "1 200 db",
+            "unit_price": "60 Ft",
+            "net": "72 000 Ft",
+        }
     ],
 }
 OK_TEXT = json.dumps(PAYLOAD, ensure_ascii=False)

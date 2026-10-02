@@ -205,9 +205,7 @@ def test_ac6_schema_and_instructions_are_identical_regardless_of_format(
 
     assert type(pdf_result.value) is type(image_result.value) is InvoiceExtraction
     assert backend.schema(pdf_client.calls[0]) == backend.schema(image_client.calls[0])
-    assert backend.instructions(pdf_client.calls[0]) == backend.instructions(
-        image_client.calls[0]
-    )
+    assert backend.instructions(pdf_client.calls[0]) == backend.instructions(image_client.calls[0])
 
 
 @pytest.mark.parametrize(
@@ -497,9 +495,7 @@ def test_invoice_and_tig_prompts_differ(backend: Backend) -> None:
     inv_extractor.extract(b"%PDF", "application/pdf")
     tig_extractor.extract(b"%PDF", "application/pdf", kind=DocumentKind.TIG)
 
-    assert backend.instructions(inv_client.calls[0]) != backend.instructions(
-        tig_client.calls[0]
-    )
+    assert backend.instructions(inv_client.calls[0]) != backend.instructions(tig_client.calls[0])
 
 
 # --- protocol and logging ---------------------------------------------------------------
