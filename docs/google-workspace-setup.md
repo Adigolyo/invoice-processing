@@ -269,6 +269,13 @@ gcloud secrets versions add kibit-oauth-refresh-token-staging --data-file=- <<< 
 # ...and again, signed in as the PRODUCTION shared mailbox
 gcloud secrets versions add kibit-oauth-refresh-token-production --data-file=- <<< "$REFRESH_TOKEN"
 
+# OAuth client from Path A2 (client_secret.json → installed.client_id / installed.client_secret).
+# The service builds credentials from these plus the refresh token.
+for ENV in staging production; do
+  gcloud secrets versions add kibit-oauth-client-id-$ENV     --data-file=- <<< "$(python3 -c "import json;print(json.load(open('secrets/client_secret.json'))['installed']['client_id'])")"
+  gcloud secrets versions add kibit-oauth-client-secret-$ENV --data-file=- <<< "$(python3 -c "import json;print(json.load(open('secrets/client_secret.json'))['installed']['client_secret'])")"
+done
+
 gcloud secrets versions add kibit-gemini-api-key-staging    --data-file=- <<< "$GEMINI_API_KEY_STAGING"
 gcloud secrets versions add kibit-gemini-api-key-production --data-file=- <<< "$GEMINI_API_KEY_PRODUCTION"
 ```
