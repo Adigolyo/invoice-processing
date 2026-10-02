@@ -146,6 +146,7 @@ def test_invoice_extraction_field_list_matches_design() -> None:
         "supply_date",
         "performance_date",
         "line_items",
+        "supplier_country",
     ]
 
 
