@@ -19,7 +19,7 @@ manager who sent the certificate.
 ## Architecture
 
 A single Python service ("the Intake Service", a modular monolith) runs on **Cloud Run**.
-**Cloud Scheduler** calls it every 10 minutes through an OIDC-authenticated `POST /run`.
+**Cloud Scheduler** calls it every minute through an OIDC-authenticated `POST /run`.
 Each run loads its configuration from the ledger sheet's `Config` tab and lists the
 candidate Gmail messages. It then processes them **one at a time** through this pipeline:
 
@@ -41,7 +41,7 @@ Gmail labels used as the state machine:
 
 ```mermaid
 flowchart TB
-    Scheduler([Cloud Scheduler<br/>every 10 min]) -->|OIDC POST /run| Orchestrator
+    Scheduler([Cloud Scheduler<br/>every minute]) -->|OIDC POST /run| Orchestrator
     subgraph Run[Intake Service on Cloud Run]
         Orchestrator[Pipeline Orchestrator]
         Classify[Inbox Poll & Route Classifier]

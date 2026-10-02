@@ -54,12 +54,12 @@ locals {
     staging = {
       cpu      = "1"
       memory   = "512Mi"
-      schedule = "*/10 * * * *"
+      schedule = "* * * * *" # every minute; overlapping triggers get 429 (1 instance, concurrency 1)
     }
     production = {
       cpu      = "1"
       memory   = "512Mi"
-      schedule = "*/10 * * * *"
+      schedule = "* * * * *" # every minute; overlapping triggers get 429 (1 instance, concurrency 1)
     }
   }
 

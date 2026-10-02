@@ -32,7 +32,7 @@ variable "monitoring_service_names" {
 }
 
 variable "alert_evaluation_window_seconds" {
-  description = "Alignment window for the error-outcome and failed-run alerts. Default 600s = one Cloud Scheduler cycle (*/10 * * * *)."
+  description = "Alignment window for the error-outcome and failed-run alerts. Default 600s = ten one-minute Cloud Scheduler cycles."
   type        = number
   default     = 600
 

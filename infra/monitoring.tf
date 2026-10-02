@@ -158,7 +158,7 @@ resource "google_monitoring_alert_policy" "error_outcome" {
     content   = <<-EOT
       **An invoice email could not be processed** (environment: `${each.key}`, Cloud Run service `${each.value}`).
 
-      The email was left **unread and unlabelled**, so the next run (every 10 minutes) retries it
+      The email was left **unread and unlabelled**, so the next run (every minute) retries it
       automatically. Nothing was half-booked: no label, read state or ledger row was changed for it.
 
       What to do:

@@ -12,7 +12,7 @@ with two environments separated by resource name:
 |---|---|---|
 | Workspace account | sandbox account | shared production mailbox |
 | Cloud Run service | `kibit-intake-staging` | `kibit-intake-production` |
-| Scheduler job (every 10 min, Europe/Budapest) | `kibit-intake-poll-staging` | `kibit-intake-poll-production` |
+| Scheduler job (every minute, Europe/Budapest) | `kibit-intake-poll-staging` | `kibit-intake-poll-production` |
 | Runtime SA | `kibit-intake-staging@…` | `kibit-intake-production@…` |
 | Scheduler SA (the only caller `/run` accepts) | `kibit-scheduler-staging@…` | `kibit-scheduler-production@…` |
 | OIDC audience (`OIDC_AUDIENCE`) | `kibit-intake-staging` | `kibit-intake-production` |
