@@ -31,3 +31,6 @@ tests/fixtures/invoice_series/
 # Original example-data folders (TIG pairs are copied into tests/fixtures/tig_pairs/)
 TIG_szamla_parok/
 számla sorozat/
+
+# Local scanned invoices (real documents, never commit)
+scan/
