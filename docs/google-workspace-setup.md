@@ -79,6 +79,7 @@ guide.)
    - `Kibit/Pending`
    - `Kibit/NeedsReview`
    - `Kibit/AwaitingTIG`
+   - `Kibit/Duplicate`
 2. **Drive folder.** Create an "Invoices" root folder. The service creates the monthly
    `YYMM` subfolders under it. Copy its **folder ID** from the URL:
    `https://drive.google.com/drive/folders/<FOLDER_ID>`.

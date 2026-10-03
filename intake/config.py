@@ -9,7 +9,9 @@ Values may be native Python types or the plain strings a spreadsheet cell holds:
 - integers / decimals: native numbers or their string form.
 
 Every key in ``REQUIRED_KEYS`` must be present and non-blank, otherwise a single
-``ConfigError`` names all missing keys. Unknown keys are ignored.
+``ConfigError`` names all missing keys. Unknown keys are ignored. ``label_duplicate`` is
+optional (added after go-live, so existing Config tabs stay valid) and defaults to
+``DEFAULT_DUPLICATE_LABEL``.
 """
 
 from __future__ import annotations
@@ -35,6 +37,8 @@ LABEL_KEYS = (
     "label_needs_review",
     "label_awaiting_tig",
 )
+DUPLICATE_LABEL_KEY = "label_duplicate"
+DEFAULT_DUPLICATE_LABEL = "Kibit/Duplicate"
 REQUIRED_KEYS: tuple[str, ...] = (
     *LIST_KEYS,
     "currency_map",
@@ -56,12 +60,13 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class LabelNames:
-    """Gmail label names for the four outcome states (ADR 3)."""
+    """Gmail label names for the outcome states (ADR 3, plus Duplicate)."""
 
     processed: str
     pending: str
     needs_review: str
     awaiting_tig: str
+    duplicate: str = DEFAULT_DUPLICATE_LABEL
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +119,11 @@ class Config:
                 pending=labels["label_pending"],
                 needs_review=labels["label_needs_review"],
                 awaiting_tig=labels["label_awaiting_tig"],
+                duplicate=(
+                    DEFAULT_DUPLICATE_LABEL
+                    if _is_blank(raw.get(DUPLICATE_LABEL_KEY))
+                    else _parse_str(DUPLICATE_LABEL_KEY, raw[DUPLICATE_LABEL_KEY])
+                ),
             ),
             sequence_start=sequence_start,
             sequence_width=sequence_width,
@@ -205,4 +215,11 @@ def _parse_currency_map(key: str, value: object) -> Mapping[str, str]:
     return MappingProxyType(result)
 
 
-__all__ = ["REQUIRED_KEYS", "Config", "ConfigError", "LabelNames"]
+__all__ = [
+    "DEFAULT_DUPLICATE_LABEL",
+    "DUPLICATE_LABEL_KEY",
+    "REQUIRED_KEYS",
+    "Config",
+    "ConfigError",
+    "LabelNames",
+]

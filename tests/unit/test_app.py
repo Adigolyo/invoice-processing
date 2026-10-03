@@ -166,6 +166,7 @@ def test_run_with_valid_scheduler_token_runs_one_cycle_and_returns_its_summary()
         "pending": 1,
         "needs_review": 0,
         "awaiting_tig": 0,
+        "duplicate": 0,
         "errors": 1,
         "skipped": 0,
     }

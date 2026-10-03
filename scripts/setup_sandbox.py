@@ -36,7 +36,13 @@ FIXTURES = ROOT / "tests" / "fixtures" / "tig_pairs"
 ENV_FILE = ROOT / ".env"
 SECRETS_DIR = ROOT / "secrets"
 
-LABELS = ("Kibit/Processed", "Kibit/Pending", "Kibit/NeedsReview", "Kibit/AwaitingTIG")
+LABELS = (
+    "Kibit/Processed",
+    "Kibit/Pending",
+    "Kibit/NeedsReview",
+    "Kibit/AwaitingTIG",
+    "Kibit/Duplicate",
+)
 DRIVE_FOLDER_NAME = "Invoices (sandbox)"
 SPREADSHEET_TITLE = "Kibit invoice ledger (sandbox)"
 FOLDER_MIME = "application/vnd.google-apps.folder"
@@ -61,6 +67,7 @@ def config_rows(
         ["label_pending", LABELS[1]],
         ["label_needs_review", LABELS[2]],
         ["label_awaiting_tig", LABELS[3]],
+        ["label_duplicate", LABELS[4]],
         ["sequence_start", "1"],
         ["sequence_width", "3"],
         ["rounding_tolerance", "0.01"],

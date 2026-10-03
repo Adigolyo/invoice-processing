@@ -310,9 +310,11 @@ def test_outcome_label_uses_the_configured_names(outcome: Outcome, label: str) -
 
 
 def test_outcome_label_is_not_hardcoded() -> None:
-    custom = LabelNames(processed="P", pending="Q", needs_review="R", awaiting_tig="S")
+    custom = LabelNames(
+        processed="P", pending="Q", needs_review="R", awaiting_tig="S", duplicate="D"
+    )
 
-    assert [outcome_label(o, custom) for o in Outcome] == ["P", "Q", "R", "S"]
+    assert [outcome_label(o, custom) for o in Outcome] == ["P", "Q", "R", "S", "D"]
 
 
 @pytest.mark.parametrize(

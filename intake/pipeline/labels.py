@@ -9,7 +9,8 @@ Outcome         label                 read state   re-evaluated next run?
 PROCESSED       ``labels.processed``  read         no (excluded from the poll query)
 PENDING         ``labels.pending``    read         no (excluded from the poll query)
 NEEDS_REVIEW    ``labels.needs_review``  **unread**  no (excluded from the poll query)
-AWAITING_TIG    ``labels.awaiting_tig``  **unread**  yes, every run (USR-005-04)
+AWAITING_TIG    ``labels.awaiting_tig``  **unread**  yes (legacy: no longer produced)
+DUPLICATE       ``labels.duplicate``  read         no (excluded from the poll query)
 ==============  ====================  ===========  ===================================
 
 USR-001-04 says a flagged email "remains unread"; the NeedsReview label is the ADR 3
@@ -39,7 +40,7 @@ from intake.reconciliation.outcome_rules import (
     superseded_labels,
 )
 
-MARKS_READ: Final = frozenset({Outcome.PROCESSED, Outcome.PENDING})
+MARKS_READ: Final = frozenset({Outcome.PROCESSED, Outcome.PENDING, Outcome.DUPLICATE})
 """Outcomes whose email is marked read; NeedsReview and AwaitingTIG stay unread."""
 
 _SYSTEM_LABELS: Final = frozenset(
@@ -61,13 +62,19 @@ class LabelPlan:
 
 
 def marks_read(outcome: Outcome) -> bool:
-    """True when the outcome's email is marked read (processed / pending only)."""
+    """True when the outcome's email is marked read (processed, pending, duplicate)."""
     return outcome in MARKS_READ
 
 
-def outcome_label_names(labels: LabelNames) -> tuple[str, str, str, str]:
-    """The four configured Kibit outcome label names (processed, pending, review, TIG)."""
-    return (labels.processed, labels.pending, labels.needs_review, labels.awaiting_tig)
+def outcome_label_names(labels: LabelNames) -> tuple[str, str, str, str, str]:
+    """The configured Kibit outcome label names (processed, pending, review, TIG, duplicate)."""
+    return (
+        labels.processed,
+        labels.pending,
+        labels.needs_review,
+        labels.awaiting_tig,
+        labels.duplicate,
+    )
 
 
 def validate_label_names(labels: LabelNames) -> None:

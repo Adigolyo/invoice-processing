@@ -78,7 +78,7 @@ def test_one_run_summary_with_counts_per_outcome(capture: _Capture) -> None:
     h = Harness()
     h.direct_invoice("m1")
     h.direct_invoice("m2", content=INVOICE_PDF_2, answer=RuntimeError(f"boom {FINANCIAL[0]}"))
-    h.tig_thread(with_tig=False)  # no TIG in the thread -> processed
+    h.tig_thread(with_tig=False)  # same invoice number as m1 -> duplicate
 
     h.run()
 
@@ -93,15 +93,17 @@ def test_one_run_summary_with_counts_per_outcome(capture: _Capture) -> None:
             "pending",
             "needs_review",
             "awaiting_tig",
+            "duplicate",
             "errors",
             "skipped",
         )
     } == {
         "candidates": 3,
-        "processed": 2,
+        "processed": 1,
         "pending": 0,
         "needs_review": 0,
         "awaiting_tig": 0,
+        "duplicate": 1,
         "errors": 1,
         "skipped": 0,
     }

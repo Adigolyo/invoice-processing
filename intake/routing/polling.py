@@ -65,7 +65,12 @@ def poll_candidates(gmail: CandidateSource, config: Config) -> list[Candidate]:
     Read-only. Exceptions from ``gmail.list_candidates()`` propagate unchanged.
     """
     listed = gmail.list_candidates()
-    terminal = {config.labels.processed, config.labels.pending, config.labels.needs_review}
+    terminal = {
+        config.labels.processed,
+        config.labels.pending,
+        config.labels.needs_review,
+        config.labels.duplicate,
+    }
     awaiting_tig = config.labels.awaiting_tig
 
     seen: set[str] = set()

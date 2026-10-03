@@ -73,6 +73,7 @@ ALLOWED_FIELDS: Final[Mapping[str, FieldKind]] = {
     "pending": "int",
     "needs_review": "int",
     "awaiting_tig": "int",
+    "duplicate": "int",
     "errors": "int",
     "skipped": "int",
     # extraction call metadata (never the document or the response text)

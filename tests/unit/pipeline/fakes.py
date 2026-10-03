@@ -17,6 +17,7 @@ from typing import Any
 from intake.clients.drive_client import (
     SOURCE_ATTACHMENT_PROPERTY,
     SOURCE_MESSAGE_ID_PROPERTY,
+    FiledByAttachment,
     FiledFileRef,
     SavedFile,
 )
@@ -45,6 +46,7 @@ LABELS = LabelNames(
     pending="Kibit/Pending",
     needs_review="Kibit/NeedsReview",
     awaiting_tig="Kibit/AwaitingTIG",
+    duplicate="Kibit/Duplicate",
 )
 
 CONTRACTOR_DOMAIN = "contractor.example"
@@ -61,6 +63,7 @@ def make_config(**overrides: Any) -> Config:
         "label_pending": LABELS.pending,
         "label_needs_review": LABELS.needs_review,
         "label_awaiting_tig": LABELS.awaiting_tig,
+        "label_duplicate": LABELS.duplicate,
         "sequence_start": "1",
         "sequence_width": "3",
         "rounding_tolerance": "0.01",
@@ -111,6 +114,7 @@ class FakeGmail(_Failing):
             labels.pending,
             labels.needs_review,
             labels.awaiting_tig,
+            labels.duplicate,
         }
         self.messages: dict[str, FakeMessage] = {}
         self.writes: list[tuple[str, str, str | None]] = []
@@ -337,6 +341,14 @@ class FakeDrive(_Failing):
                 continue
             refs.append(FiledFileRef(f.file_id, f.name, f.folder_id))
         return refs
+
+    def find_filed_by_attachment(self, attachment_key: str) -> list[FiledByAttachment]:
+        self._check("find_filed_by_attachment")
+        return [
+            FiledByAttachment(f.file_id, f.name, f.app_properties.get(SOURCE_MESSAGE_ID_PROPERTY))
+            for f in self.files.values()
+            if f.app_properties.get(SOURCE_ATTACHMENT_PROPERTY) == attachment_key
+        ]
 
 
 # --- Sheets -------------------------------------------------------------------------------

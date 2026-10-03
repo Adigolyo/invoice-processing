@@ -38,6 +38,7 @@ Gmail labels used as the state machine:
 | `Kibit/Pending` | Filed and booked, TIG mismatch outstanding (a draft reply was created) |
 | `Kibit/NeedsReview` | Ambiguous route or incomplete data. Never retried automatically |
 | `Kibit/AwaitingTIG` | No longer applied. A contractor invoice with no TIG in its thread is processed and booked like any other; threads labelled by earlier versions are processed on the next run |
+| `Kibit/Duplicate` | Already filed and booked from another email: the identical PDF, or the same invoice number from the same provider. Nothing is filed or booked again, and no draft reply is made |
 
 ```mermaid
 flowchart TB

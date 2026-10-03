@@ -102,7 +102,7 @@ def build_candidate_query(labels: LabelNames) -> str:
     ``labels.awaiting_tig`` is deliberately *not* excluded: those threads are re-evaluated
     every run (ADR 3, USR-005-04).
     """
-    excluded = (labels.processed, labels.pending, labels.needs_review)
+    excluded = (labels.processed, labels.pending, labels.needs_review, labels.duplicate)
     return " ".join(["in:inbox", "is:unread", *(f"-label:{_quote_label(n)}" for n in excluded)])
 
 

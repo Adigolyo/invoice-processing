@@ -608,3 +608,18 @@ def test_find_filed_by_attachment_matches_the_fingerprint_across_messages() -> N
 def test_find_filed_by_attachment_rejects_a_blank_key() -> None:
     with pytest.raises(ValueError):
         FakeDrive().client().find_filed_by_attachment("  ")
+
+
+def test_find_filed_by_attachment_ignores_files_outside_this_root() -> None:
+    # Another ledger's tree (e.g. an earlier E2E run) filed the same PDF: not a duplicate
+    # for this ledger.
+    fake = FakeDrive()
+    other_root = fake.add("Invoices E2E old", "elsewhere", FOLDER_MIME_TYPE)
+    other_month = fake.add("2405", other_root, FOLDER_MIME_TYPE)
+    fake.add(
+        "2405_001_A.pdf",
+        other_month,
+        app_properties={"kibitSourceMessageId": "m1", "kibitSourceAttachment": KEY},
+    )
+
+    assert fake.client().find_filed_by_attachment(KEY) == []

@@ -138,6 +138,7 @@ def test_fixture_pairs_end_in_their_documented_states() -> None:
         "pending": 1,
         "needs_review": 0,
         "awaiting_tig": 0,
+        "duplicate": 0,
         "errors": 0,
         "skipped": 0,
     }

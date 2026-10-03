@@ -53,11 +53,20 @@ class Outcome(StrEnum):
     PENDING = "pending"
     NEEDS_REVIEW = "needs_review"
     AWAITING_TIG = "awaiting_tig"
+    # Not a TIG outcome: an invoice already filed or booked from another email
+    # (same PDF, or same external ID + provider). Nothing is filed or booked again.
+    DUPLICATE = "duplicate"
 
 
 _FILED_AND_BOOKED = frozenset({Outcome.PROCESSED, Outcome.PENDING})
 # When a thread somehow carries several Kibit labels, the earliest here is reported.
-_PRECEDENCE = (Outcome.PENDING, Outcome.PROCESSED, Outcome.NEEDS_REVIEW, Outcome.AWAITING_TIG)
+_PRECEDENCE = (
+    Outcome.PENDING,
+    Outcome.PROCESSED,
+    Outcome.DUPLICATE,
+    Outcome.NEEDS_REVIEW,
+    Outcome.AWAITING_TIG,
+)
 
 
 def pending_outcome(comparison: ComparisonResult) -> bool:
@@ -115,6 +124,7 @@ def outcome_label(outcome: Outcome, labels: LabelNames) -> str:
         Outcome.PENDING: labels.pending,
         Outcome.NEEDS_REVIEW: labels.needs_review,
         Outcome.AWAITING_TIG: labels.awaiting_tig,
+        Outcome.DUPLICATE: labels.duplicate,
     }[outcome]
 
 

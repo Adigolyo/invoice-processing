@@ -210,7 +210,12 @@ def leftover_e2e_invoices(gmail: Any) -> list[str]:
     Any unread inbox message tagged ``[Kibit E2E ...]`` from someone other than the PM
     that is not in a terminal Kibit state (AwaitingTIG counts as unfinished).
     """
-    excluded = (LABELS["processed"], LABELS["pending"], LABELS["needs_review"])
+    excluded = (
+        LABELS["processed"],
+        LABELS["pending"],
+        LABELS["needs_review"],
+        LABELS["duplicate"],
+    )
     query = " ".join(
         [
             'in:inbox is:unread subject:"Kibit E2E"',

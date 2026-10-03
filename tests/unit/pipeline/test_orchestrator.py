@@ -721,6 +721,7 @@ def test_run_summary_reports_every_outcome_count() -> None:
         "pending": 0,
         "needs_review": 0,
         "awaiting_tig": 0,
+        "duplicate": 0,
         "errors": 0,
         "skipped": 0,
     }

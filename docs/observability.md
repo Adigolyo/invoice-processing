@@ -32,13 +32,13 @@ fields appear only when set (`None` is omitted).
 | `message_id` | code | Gmail message ID: the correlation ID of one invoice email. |
 | `thread_id` | code | Gmail thread ID (allowed; not currently logged). |
 | `stage` | code | `route`, `attachments`, `extract`, `normalise`, `reconcile`, `file`, `book`, `finalise`, `evaluate`. On an `error` candidate outcome: the stage that failed. |
-| `outcome` | code | Per stage: `ok`, `flagged`, `error`, `skipped`. Per candidate (`event=candidate_outcome`): `processed`, `pending`, `needs_review`, `awaiting_tig`, `error`, `skipped`. Per extraction: `ok`, `incomplete`, `invalid_response`. |
+| `outcome` | code | Per stage: `ok`, `flagged`, `error`, `skipped`. Per candidate (`event=candidate_outcome`): `processed`, `pending`, `needs_review`, `awaiting_tig`, `duplicate`, `error`, `skipped`. Per extraction: `ok`, `incomplete`, `invalid_response`. |
 | `reason` | code | Fixed reason code, e.g. `ambiguous_route`, `missing_tig`, `normalisation_failed:due_date`, `terminal_label`, or the exception type for an error. |
 | `duration_ms` | int | Stage duration; on `candidate_outcome` the whole candidate. |
 | `error_type` | code | Exception class name (never its message). |
 | `stack_trace` | text | ERROR records with an exception only: Python traceback layout with file, line and function per frame, and the exception **type** only. |
 | `@type`, `serviceContext` | | Added next to `stack_trace` so Error Reporting files the record as an event (`service` = `K_SERVICE`, `version` = `K_REVISION`). |
-| `candidates`, `processed`, `pending`, `needs_review`, `awaiting_tig`, `errors`, `skipped` | int | `run_started` (candidates) and `run_summary` (all counts). |
+| `candidates`, `processed`, `pending`, `needs_review`, `awaiting_tig`, `duplicate`, `errors`, `skipped` | int | `run_started` (candidates) and `run_summary` (all counts). |
 | `document_kind`, `mime_type`, `size_bytes`, `model`, `effort`, `stop_reason`, `input_tokens`, `output_tokens`, `response_sha256`, `line_item_count`, `missing_fields` | | Extraction call metadata. `response_sha256` fingerprints the model's answer so a suspect extraction can be compared across runs without logging it. `missing_fields` lists schema field names only. |
 | `environment`, `draft_status`, `config_keys` | | Credential build, TIG draft-reply status, number of Config keys loaded. |
 | `redacted_fields` | list | Names of extra fields that were dropped by the redaction guard. Should never appear; if it does, a logging call is passing something it should not. |

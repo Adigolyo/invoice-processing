@@ -24,14 +24,19 @@ Per candidate (``Orchestrator.process``), in order:
    Byte-identical copies count once. None left, or more than one distinct invoice ->
    NeedsReview (the specification speaks of "the invoice" of an email; splitting one
    email into several invoices would need a per-invoice outcome the labels cannot hold).
+   **Duplicate by content**: the same PDF bytes already filed under this ledger's root
+   from another email -> Duplicate (no AI call). Filed from this email -> a rerun.
 4. **Extract** (``Extractor``, injected). Incomplete or unsupported -> NeedsReview;
    an ``error`` result or any exception -> error (retried next run).
 5. **Normalise**: origin -> currency ISO -> amounts (HUF thousands rule needs the
    currency) -> dates -> performance date -> ledger rounding. Any failure in a value the
    ledger or the registry number needs -> NeedsReview.
+   **Duplicate by ledger key** (unless this email filed it itself): the same external ID
+   + provider already in the ledger -> Duplicate, before any TIG comparison, so a
+   re-sent invoice never gets a second draft reply.
 6. **Reconcile** (TIG route only): ``find_tig`` on the thread; when it finds nothing
    before the invoice, the whole thread is searched again so a TIG sent *after* the
-   invoice is picked up (USR-005-04 AC4). Missing -> AwaitingTIG; unreadable/ambiguous
+   invoice is picked up (USR-005-04 AC4). Missing -> Processed; unreadable/ambiguous
    -> NeedsReview; mismatch -> one draft reply (never sent) and outcome Pending, even if
    the draft could not be created (USR-005-02 AC6).
 7. **Registry number + filing**, idempotent across runs through the Drive source link:
@@ -43,7 +48,7 @@ Per candidate (``Orchestrator.process``), in order:
 8. **Book**: the duplicate gate is consulted immediately before ``append_row``; an
    already-booked invoice is not appended again (USR-004-03).
 9. **Finalise**: add the outcome label, remove superseded Kibit labels, then mark read
-   (processed/pending only). NeedsReview and AwaitingTIG stay unread.
+   (processed, pending, duplicate). NeedsReview and AwaitingTIG stay unread.
 
 Any exception in steps 1-9 aborts that candidate before any label or read-state change
 (beyond what step 9 itself already applied), is recorded as ``error`` and the run
@@ -57,12 +62,12 @@ Logging (``intake.observability.logging``; every record of a run carries its ``r
   ``message_id``, ``duration_ms`` and a fixed ``reason`` code when not ``ok``; INFO, or
   WARNING when the stage raised;
 - one ``event=candidate_outcome`` per candidate with its final ``outcome`` (``processed``,
-  ``pending``, ``needs_review``, ``awaiting_tig``, ``error``, ``skipped``), ``reason``,
-  ``message_id`` and ``duration_ms``. An ``error`` outcome is logged at ERROR with the
+  ``pending``, ``needs_review``, ``awaiting_tig``, ``duplicate``, ``error``, ``skipped``),
+  ``reason``, ``message_id`` and ``duration_ms``. An ``error`` outcome is logged at ERROR with the
   failed ``stage``, the ``error_type`` and a message-free stack trace, so Cloud Error
   Reporting picks it up and the ``error`` alert fires;
 - ``event=run_summary`` once, at the end, with the counts per outcome (``processed``,
-  ``pending``, ``needs_review``, ``awaiting_tig``, ``errors``, ``skipped``).
+  ``pending``, ``needs_review``, ``awaiting_tig``, ``duplicate``, ``errors``, ``skipped``).
 
 Never document content, amounts, names, or exception messages.
 """
@@ -81,7 +86,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Final, Protocol
 
-from intake.clients.drive_client import FiledFileRef, SavedFile
+from intake.clients.drive_client import FiledByAttachment, FiledFileRef, SavedFile
 from intake.clients.gmail_client import AttachmentContent, Thread
 from intake.clients.sheets_client import LedgerRow
 from intake.config import Config
@@ -171,6 +176,8 @@ class DrivePort(Protocol):
         self, message_id: str, attachment_key: str | None = None
     ) -> list[FiledFileRef]: ...
 
+    def find_filed_by_attachment(self, attachment_key: str) -> list[FiledByAttachment]: ...
+
 
 class SheetsPort(Protocol):
     """The ``SheetsClient`` surface the pipeline uses."""
@@ -201,6 +208,7 @@ class CandidateStatus(StrEnum):
     PENDING = "pending"
     NEEDS_REVIEW = "needs_review"
     AWAITING_TIG = "awaiting_tig"
+    DUPLICATE = "duplicate"
     ERROR = "error"
     SKIPPED = "skipped"
 
@@ -210,6 +218,7 @@ _STATUS_BY_OUTCOME: Final = {
     Outcome.PENDING: CandidateStatus.PENDING,
     Outcome.NEEDS_REVIEW: CandidateStatus.NEEDS_REVIEW,
     Outcome.AWAITING_TIG: CandidateStatus.AWAITING_TIG,
+    Outcome.DUPLICATE: CandidateStatus.DUPLICATE,
 }
 
 _SUMMARY_KEYS: Final = (
@@ -217,6 +226,7 @@ _SUMMARY_KEYS: Final = (
     ("pending", CandidateStatus.PENDING),
     ("needs_review", CandidateStatus.NEEDS_REVIEW),
     ("awaiting_tig", CandidateStatus.AWAITING_TIG),
+    ("duplicate", CandidateStatus.DUPLICATE),
     ("errors", CandidateStatus.ERROR),
     ("skipped", CandidateStatus.SKIPPED),
 )
@@ -402,10 +412,20 @@ class Orchestrator:
 
         with self._stage("attachments", message_id):
             invoice = self._invoice_attachment(message_id)
+        # Duplicates are recognised before anything is extracted, reconciled or filed:
+        # first by the PDF's bytes (no AI call, independent of how it would be read),
+        # then by the ledger key once the invoice number and provider are known. An
+        # earlier filing from this very email is a rerun, never a duplicate of itself.
+        with self._stage("dedupe", message_id):
+            filed_from_here = self._check_document_duplicate(message_id, invoice)
         with self._stage("extract", message_id):
             extraction = self._extract(invoice)
         with self._stage("normalise", message_id):
             normalised = self._normalise(extraction)
+        if not filed_from_here:
+            with self._stage("dedupe", message_id):
+                if self._is_booked(extraction):
+                    raise _Stop(Outcome.DUPLICATE, "already_booked")
 
         outcome = Outcome.PROCESSED
         if route is Route.TIG:
@@ -418,6 +438,16 @@ class Orchestrator:
             with self._stage("book", message_id):
                 self._book(row)
         return outcome
+
+    def _check_document_duplicate(self, message_id: str, invoice: AttachmentContent) -> bool:
+        """Raise DUPLICATE if these exact bytes were filed from another email.
+
+        Returns True when they were filed from this email (a rerun).
+        """
+        filed = self._drive.find_filed_by_attachment(attachment_source_key(invoice.content))
+        if any(f.source_message_id != message_id for f in filed):
+            raise _Stop(Outcome.DUPLICATE, "duplicate_document")
+        return bool(filed)
 
     def _is_tig_carrier(self, candidate: Candidate) -> bool:
         documents = [

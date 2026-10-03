@@ -48,6 +48,7 @@ MAX_APP_PROPERTY_BYTES = 124
 
 _LIST_FIELDS = "nextPageToken, files(id, name, mimeType)"
 _SOURCE_LIST_FIELDS = "nextPageToken, files(id, name, mimeType, parents)"
+_FINGERPRINT_LIST_FIELDS = "nextPageToken, files(id, name, mimeType, parents, appProperties)"
 _PAGE_SIZE = 1000
 
 
@@ -66,6 +67,15 @@ class SavedFile:
     file_id: str
     filename: str
     created: bool
+
+
+@dataclass(frozen=True, slots=True)
+class FiledByAttachment:
+    """A file found by ``find_filed_by_attachment`` and the message it was filed from."""
+
+    file_id: str
+    name: str
+    source_message_id: str | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -269,6 +279,46 @@ class DriveClient:
             )
         return refs
 
+    def find_filed_by_attachment(self, attachment_key: str) -> list[FiledByAttachment]:
+        """Every non-trashed file filed under this root (in a month folder) from an
+        attachment with this content fingerprint, from any message, with the message it
+        came from (duplicate detection). Files filed under another root, such as another
+        ledger's or an earlier E2E run's, are not this ledger's filings and are ignored.
+
+        Raises on any API error, so a failed lookup is never mistaken for "not filed".
+        """
+        key = _validate_app_property(SOURCE_ATTACHMENT_PROPERTY, attachment_key)
+        month_folders = {
+            _file_id(entry)
+            for entry in self._list(
+                f"'{_escape(self._root)}' in parents "
+                f"and mimeType = '{FOLDER_MIME_TYPE}' and trashed = false"
+            )
+        }
+        query = " and ".join(
+            [
+                f"appProperties has {{ key='{SOURCE_ATTACHMENT_PROPERTY}' "
+                f"and value='{_escape(key)}' }}",
+                f"mimeType != '{FOLDER_MIME_TYPE}'",
+                "trashed = false",
+            ]
+        )
+        found: list[FiledByAttachment] = []
+        for entry in self._list(query, fields=_FINGERPRINT_LIST_FIELDS):
+            parents = entry.get("parents")
+            if not isinstance(parents, list) or month_folders.isdisjoint(parents):
+                continue
+            props = entry.get("appProperties")
+            source = props.get(SOURCE_MESSAGE_ID_PROPERTY) if isinstance(props, dict) else None
+            found.append(
+                FiledByAttachment(
+                    file_id=_file_id(entry),
+                    name=str(entry.get("name", "")),
+                    source_message_id=source if isinstance(source, str) else None,
+                )
+            )
+        return found
+
     def _list(self, query: str, *, fields: str = _LIST_FIELDS) -> list[dict[str, Any]]:
         files: list[dict[str, Any]] = []
         page_token: str | None = None
@@ -301,6 +351,7 @@ __all__ = [
     "DriveClient",
     "DriveConflictError",
     "DriveResponseError",
+    "FiledByAttachment",
     "FiledFileRef",
     "SavedFile",
     "validate_filename",

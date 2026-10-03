@@ -49,10 +49,11 @@ LABELS: Final[Mapping[str, str]] = {
     "pending": "Kibit/Pending",
     "needs_review": "Kibit/NeedsReview",
     "awaiting_tig": "Kibit/AwaitingTIG",
+    "duplicate": "Kibit/Duplicate",
 }
 _SHORT_LABEL: Final = {name: name.split("/", 1)[1] for name in LABELS.values()}
 _EXPECTED_STATUS: Final = {"match": "processed", "mismatch": "pending"}
-_BAD_STATUSES: Final = frozenset({"error", "needs_review", "awaiting_tig"})
+_BAD_STATUSES: Final = frozenset({"error", "needs_review", "awaiting_tig", "duplicate"})
 _LEDGER_COLUMNS: Final = (
     "INV_ID_int",
     "Provider",
