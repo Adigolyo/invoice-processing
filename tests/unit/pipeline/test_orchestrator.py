@@ -241,7 +241,7 @@ def test_contractor_invoice_without_a_tig_is_processed_and_booked() -> None:
     assert h.gmail.kibit_labels_of("inv") == {LABELS.processed}
     assert not h.gmail.is_unread("inv")
     (row,) = h.sheets.rows
-    assert row.inv_type == "tig"
+    assert row.inv_type == "direct"  # no TIG to reply to: not the TIG flow
     assert h.gmail.drafts == []
 
     # Idempotent: a second run books nothing new.
@@ -280,15 +280,13 @@ def test_unreadable_tig_needs_review_and_nothing_is_filed(
 # --- NeedsReview branches (USR-001-04) ------------------------------------------------------
 
 
-def test_ambiguous_route_needs_review_without_extraction() -> None:
+def test_invoice_without_sender_or_subject_is_processed_as_direct() -> None:
+    # Routing no longer depends on the sender: with no TIG in the thread it is direct.
     h = Harness()
     h.direct_invoice(sender="", subject="")
 
-    assert _counts(h.run()) == {"needs_review": 1}
-    assert h.gmail.kibit_labels_of("m1") == {LABELS.needs_review}
-    assert h.gmail.is_unread("m1")
-    assert h.extractor.calls == []
-    _nothing_filed_or_booked(h)
+    assert _counts(h.run()) == {"processed": 1}
+    assert [r.inv_type for r in h.sheets.rows] == ["direct"]
 
 
 def test_incomplete_extraction_needs_review() -> None:
@@ -837,3 +835,17 @@ def test_a_tig_subject_alone_does_not_pull_a_direct_invoice_into_the_tig_flow() 
 
     assert _counts(h.run()) == {"processed": 1}
     assert [r.inv_type for r in h.sheets.rows] == ["direct"]
+
+
+
+def test_routing_ignores_the_sender_only_the_thread_decides() -> None:
+    # A contractor-looking sender without a TIG in the thread is direct ...
+    h = Harness()
+    h.gmail.add_message(
+        "inv", sender=CONTRACTOR, subject="Számla TIG", files=[("INV-1.pdf", PDF, INVOICE_PDF)]
+    )
+    h.extractor.answers[INVOICE_PDF] = ok(invoice_extraction())
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert [r.inv_type for r in h.sheets.rows] == ["direct"]
+    assert h.extractor.kinds() == [DocumentKind.INVOICE]

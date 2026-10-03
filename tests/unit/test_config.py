@@ -31,7 +31,6 @@ def test_from_mapping_builds_typed_config() -> None:
 
     assert config.invoice_keywords == ("számla", "invoice")
     assert config.attachment_mime_allowlist == ("application/pdf", "image/jpeg", "image/png")
-    assert config.contractor_identifiers == ("dev@contractor.example",)
     assert config.tig_subject_indicators == ("TIG", "teljesítésigazolás")
     assert dict(config.currency_map) == {"Ft": "HUF", "€": "EUR", "$": "USD"}
     assert config.labels == LabelNames(
@@ -181,3 +180,14 @@ def test_blank_duplicate_label_falls_back_to_the_default() -> None:
 
 def test_duplicate_label_is_not_a_required_key() -> None:
     assert "label_duplicate" not in REQUIRED_KEYS
+
+
+
+def test_contractor_identifiers_is_no_longer_a_setting() -> None:
+    # Routing is decided by the thread (a reply to a TIG), never by a sender list. An old
+    # Config tab that still has the row keeps working: unknown keys are ignored.
+    assert "contractor_identifiers" not in REQUIRED_KEYS
+    raw = {k: v for k, v in _valid_mapping().items() if k != "contractor_identifiers"}
+    config = Config.from_mapping(raw)
+    assert not hasattr(config, "contractor_identifiers")
+    Config.from_mapping({**raw, "contractor_identifiers": "x.example"})
