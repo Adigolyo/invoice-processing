@@ -1,7 +1,10 @@
-"""Sequence number derivation from the monthly Drive folder (USR-003-02).
+"""Sequence number derivation from the monthly Drive folder and the ledger (USR-003-02).
 
 There is no stored counter: the next ``[seq]`` for a month is derived from the files that
-are already filed in that month's ``YYMM`` folder, read live at derivation time.
+are already filed in that month's ``YYMM`` folder and from the ``INV_ID_int`` values
+already booked in the ledger, both read live at derivation time. The ledger counts too
+(2026-10-03): when a booked invoice's PDF was removed from Drive, its number was handed
+out again and the ledger showed the same ``INV_ID_int`` twice.
 
 Filename pattern
     Filed invoices are named ``{registry_number}.{ext}`` where the registry number is
@@ -50,6 +53,14 @@ REGISTRY_SEPARATOR = "_"
 
 class SequenceExhaustedError(ValueError):
     """The next sequence number does not fit the configured ``sequence_width``."""
+
+
+class RegistryNumberSource(Protocol):
+    """The slice of ``SheetsClient`` sequence derivation needs."""
+
+    def load_registry_numbers(self) -> set[str]:
+        """Every ``INV_ID_int`` booked in the ledger; raises if the read fails."""
+        ...
 
 
 class MonthFolderLister(Protocol):
@@ -139,17 +150,31 @@ class SequenceAllocator:
     meanwhile (by this run or anyone else) are always respected.
     """
 
-    def __init__(self, drive: MonthFolderLister, *, start: int, width: int) -> None:
+    def __init__(
+        self,
+        drive: MonthFolderLister,
+        *,
+        start: int,
+        width: int,
+        ledger: RegistryNumberSource | None = None,
+    ) -> None:
         _validate_width(width)
         _validate_start(start, width)
         self._drive = drive
+        self._ledger = ledger
         self.start = start
         self.width = width
         self._allocated: dict[str, set[int]] = {}
 
     @classmethod
-    def from_config(cls, drive: MonthFolderLister, config: Config) -> SequenceAllocator:
-        return cls(drive, start=config.sequence_start, width=config.sequence_width)
+    def from_config(
+        cls,
+        drive: MonthFolderLister,
+        config: Config,
+        *,
+        ledger: RegistryNumberSource | None = None,
+    ) -> SequenceAllocator:
+        return cls(drive, start=config.sequence_start, width=config.sequence_width, ledger=ledger)
 
     def allocate(self, yymm: str) -> int:
         """Derive and reserve the next sequence number for month ``yymm``.
@@ -157,11 +182,14 @@ class SequenceAllocator:
         Raises:
             ValueError: if ``yymm`` is not a valid ``YYMM`` (checked before any scan).
             SequenceExhaustedError: if the month has run out of ``width``-digit numbers.
-            Exception: whatever the folder scan raised (e.g. ``HttpError``), unchanged.
-                Nothing is reserved in any failure case.
+            Exception: whatever the folder scan or ledger read raised (e.g.
+                ``HttpError``), unchanged. Nothing is reserved in any failure case.
         """
         validate_yymm(yymm)
-        filenames = self._drive.list_month_folder(yymm)
+        filenames = list(self._drive.list_month_folder(yymm))
+        if self._ledger is not None:
+            # A bare registry number matches the filename pattern (the extension is optional).
+            filenames.extend(self._ledger.load_registry_numbers())
         reserved = self._allocated.setdefault(yymm, set())
         seq = next_sequence(
             filenames, yymm=yymm, width=self.width, start=self.start, allocated=reserved
@@ -184,6 +212,7 @@ class SequenceAllocator:
 
 __all__ = [
     "MonthFolderLister",
+    "RegistryNumberSource",
     "SequenceAllocator",
     "REGISTRY_SEPARATOR",
     "SequenceExhaustedError",

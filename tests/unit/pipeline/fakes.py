@@ -371,6 +371,10 @@ class FakeSheets(_Failing):
         self._check("load_existing_keys")
         return {(row.inv_id_ext, row.provider) for row in self.rows}
 
+    def load_registry_numbers(self) -> set[str]:
+        self._check("load_registry_numbers")
+        return {row.inv_id_int for row in self.rows}
+
     def append_row(self, row: LedgerRow) -> None:
         self._check("append_row")
         self.appends += 1

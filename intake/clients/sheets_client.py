@@ -183,6 +183,16 @@ class SheetsClient:
                 keys.add((ext_id, provider))
         return keys
 
+    def load_registry_numbers(self) -> set[str]:
+        """Every ``INV_ID_int`` (column A) in the ledger, read live (never cached).
+
+        Sequence allocation counts these as taken, so a number stays used even if its PDF
+        is later removed from Drive. The header is verified in the same read.
+        """
+        rows = self._get_values(_a1(self._ledger_tab, "A1:H"))
+        self._check_header(rows[0] if rows else [])
+        return {number for row in rows[1:] if row and (number := _cell_text(row[0]))}
+
     def append_row(self, row: LedgerRow) -> None:
         """Append exactly one row to the Ledger tab after re-verifying its header."""
         self.verify_ledger_header()

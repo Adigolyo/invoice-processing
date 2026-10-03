@@ -196,6 +196,8 @@ class SheetsPort(Protocol):
 
     def load_existing_keys(self) -> set[tuple[str, str]]: ...
 
+    def load_registry_numbers(self) -> set[str]: ...
+
     def append_row(self, row: LedgerRow) -> None: ...
 
 
@@ -323,7 +325,7 @@ class Orchestrator:
         self._drive = drive
         self._sheets = sheets
         self._extractor = extractor
-        self._allocator = SequenceAllocator.from_config(drive, config)
+        self._allocator = SequenceAllocator.from_config(drive, config, ledger=sheets)
         self._gate = DuplicateGate(sheets)
         self._failed_stage = "evaluate"
 
