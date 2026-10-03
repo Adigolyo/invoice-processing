@@ -1,4 +1,4 @@
-"""Task 13 (USR-003-01): registry number assembly, ``[YYMM][seq][SUPPLIER8]``.
+"""Task 13 (USR-003-01): registry number assembly, ``[YYMM]_[seq]_[SUPPLIER8]``.
 
 Scenarios are derived from USR-003-01 AC1-AC5, the execution plan's Task 13 row and the
 QA strategy's "Registry Number Assembly" feature, plus negative/edge paths for every
@@ -28,20 +28,21 @@ from intake.registry.supplier_id import SUPPLIER_ID_LENGTH, normalize_supplier
 
 
 def test_qa_happy_path_assembles_exact_registry_number() -> None:
-    # QA: YYMM 2405, sequence 7 (3-digit width), supplier ACMECORP -> 2405007ACMECORP
-    assert assemble("2405", 7, "ACMECORP", 3) == "2405007ACMECORP"
+    # YYMM 2405, sequence 7 (3-digit width), supplier ACMECORP -> 2405_007_ACMECORP
+    # (underscores: project owner decision, 2026-10-03)
+    assert assemble("2405", 7, "ACMECORP", 3) == "2405_007_ACMECORP"
 
 
 @pytest.mark.parametrize(
     ("yymm", "seq", "supplier", "width", "expected"),
     [
-        ("2405", 1, "KOVARIKF", 3, "2405001KOVARIKF"),
-        ("2412", 42, "TELEKOM", 3, "2412042TELEKOM"),
-        ("0001", 999, "A", 3, "0001999A"),
-        ("2405", 0, "ACMECORP", 3, "2405000ACMECORP"),  # start value 0 is a valid seq
-        ("2405", 7, "ACMECORP", 1, "24057ACMECORP"),
-        ("2405", 7, "ACMECORP", 5, "240500007ACMECORP"),
-        ("2405", 12345, "ACMECORP", 5, "240512345ACMECORP"),  # exactly fills the width
+        ("2405", 1, "KOVARIKF", 3, "2405_001_KOVARIKF"),
+        ("2412", 42, "TELEKOM", 3, "2412_042_TELEKOM"),
+        ("0001", 999, "A", 3, "0001_999_A"),
+        ("2405", 0, "ACMECORP", 3, "2405_000_ACMECORP"),  # start value 0 is a valid seq
+        ("2405", 7, "ACMECORP", 1, "2405_7_ACMECORP"),
+        ("2405", 7, "ACMECORP", 5, "2405_00007_ACMECORP"),
+        ("2405", 12345, "ACMECORP", 5, "2405_12345_ACMECORP"),  # exactly fills the width
     ],
 )
 def test_components_concatenated_in_order_with_fixed_width_padding(
@@ -51,13 +52,13 @@ def test_components_concatenated_in_order_with_fixed_width_padding(
 
 
 def test_supplier_starting_with_digits_stays_after_the_padded_sequence() -> None:
-    assert assemble("2405", 3, "3M", 3) == "24050033M"
-    assert assemble("2405", 3, "7ELEVEN", 3) == "24050037ELEVEN"
+    assert assemble("2405", 3, "3M", 3) == "2405_003_3M"
+    assert assemble("2405", 3, "7ELEVEN", 3) == "2405_003_7ELEVEN"
 
 
 def test_supplier_from_normalize_supplier_is_used_verbatim() -> None:
-    assert assemble("2405", 7, normalize_supplier("Kővári Kft"), 3) == "2405007KOVARIKF"
-    assert assemble("2405", 8, normalize_supplier("Magyar Telekom Nyrt."), 3) == ("2405008TELEKOMN")
+    assert assemble("2405", 7, normalize_supplier("Kővári Kft"), 3) == "2405_007_KOVARIKF"
+    assert assemble("2405", 8, normalize_supplier("Magyar Telekom Nyrt."), 3) == ("2405_008_TELEKOMN")
 
 
 # --- AC3: fixed total length ----------------------------------------------------------
@@ -65,19 +66,19 @@ def test_supplier_from_normalize_supplier_is_used_verbatim() -> None:
 
 @pytest.mark.parametrize("width", [1, 2, 3, 4, 6])
 @pytest.mark.parametrize("supplier", ["A", "ACME", "TELEKOM", "ACMECORP"])
-def test_length_is_four_plus_width_plus_supplier_length(width: int, supplier: str) -> None:
+def test_length_is_four_plus_width_plus_supplier_plus_two_separators(width: int, supplier: str) -> None:
     number = assemble("2405", 1, supplier, width)
-    assert len(number) == 4 + width + len(supplier)
+    assert len(number) == 4 + 1 + width + 1 + len(supplier)
 
 
 @pytest.mark.parametrize("width", [1, 3, 5])
 def test_full_length_supplier_gives_four_plus_width_plus_eight(width: int) -> None:
-    assert len(assemble("2405", 1, "ACMECORP", width)) == 4 + width + SUPPLIER_ID_LENGTH
+    assert len(assemble("2405", 1, "ACMECORP", width)) == 4 + 1 + width + 1 + SUPPLIER_ID_LENGTH
 
 
 def test_short_supplier_is_not_padded_to_eight() -> None:
     # USR-003-03 AC6: a short supplier ID is kept in full; assembly must not pad it.
-    assert assemble("2405", 7, "ACME", 3) == "2405007ACME"
+    assert assemble("2405", 7, "ACME", 3) == "2405_007_ACME"
 
 
 # --- Round trip with the sequence derivation pattern (Task 12) ------------------------
@@ -175,7 +176,7 @@ def test_refusal_is_a_value_error_that_flags_incomplete_data() -> None:
 
 def test_assembly_is_deterministic_and_side_effect_free() -> None:
     results = {assemble("2405", 7, "ACMECORP", 3) for _ in range(100)}
-    assert results == {"2405007ACMECORP"}
+    assert results == {"2405_007_ACMECORP"}
 
 
 # --- Convenience: YYMM from the performance date (Task 8) via yymm_folder_name ----------
@@ -184,13 +185,13 @@ def test_assembly_is_deterministic_and_side_effect_free() -> None:
 def test_assemble_for_date_uses_the_shared_yymm_folder_name() -> None:
     performance = date(2024, 5, 31)
     number = assemble_for_date(performance, 7, "ACMECORP", 3)
-    assert number == "2405007ACMECORP"
+    assert number == "2405_007_ACMECORP"
     assert number.startswith(yymm_folder_name(performance))
     assert number == assemble(yymm_folder_name(performance), 7, "ACMECORP", 3)
 
 
 def test_assemble_for_date_ignores_time_of_datetime() -> None:
-    assert assemble_for_date(datetime(2024, 12, 31, 23, 59), 1, "A", 3) == "2412001A"
+    assert assemble_for_date(datetime(2024, 12, 31, 23, 59), 1, "A", 3) == "2412_001_A"
 
 
 @pytest.mark.parametrize("performance", [None, "2024-05-31", "2405", 20240531])
@@ -204,3 +205,25 @@ def test_assemble_for_date_still_validates_other_components() -> None:
     with pytest.raises(RegistryNumberError) as excinfo:
         assemble_for_date(date(2024, 5, 1), None, "ACMECORP", 3)
     assert excinfo.value.component == "seq"
+
+
+# --- Underscore separators; legacy numbers still parse ---------------------------------
+
+
+def test_legacy_numbers_without_separators_still_parse() -> None:
+    # Files filed before the separator change must keep their sequence numbers taken.
+    pattern = registry_filename_pattern("2611", 3)
+    for name in ("2611015JKFT.pdf", "2611_015_JKFT.pdf"):
+        match = pattern.fullmatch(name)
+        assert match is not None
+        assert (int(match.group("seq")), match.group("supplier")) == (15, "JKFT")
+
+
+@pytest.mark.parametrize("name", ["2611_015JKFT.pdf", "2611015_JKFT.pdf", "2611__015_JKFT"])
+def test_mixed_or_doubled_separators_do_not_parse(name: str) -> None:
+    assert registry_filename_pattern("2611", 3).fullmatch(name) is None
+
+
+def test_next_sequence_counts_old_and_new_numbers_together() -> None:
+    names = ["2611014KKFT.pdf", "2611_015_JKFT.pdf"]
+    assert next_sequence(names, yymm="2611", width=3, start=1) == 16
