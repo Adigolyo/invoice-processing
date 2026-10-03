@@ -522,27 +522,109 @@ def test_ambiguous_source_link_needs_review() -> None:
     assert h.sheets.rows == []
 
 
-def test_invoice_already_booked_is_neither_refiled_nor_booked_again() -> None:
+# --- duplicates: Kibit/Duplicate, nothing filed or booked twice ---------------------------
+
+
+def _assert_duplicate(h: Harness, message_id: str) -> None:
+    assert h.gmail.kibit_labels_of(message_id) == {LABELS.duplicate}
+    assert not h.gmail.is_unread(message_id)
+    assert h.sheets.appends == 1
+    assert h.drive.uploads == 1
+
+
+def test_identical_pdf_sent_again_is_a_duplicate_without_extraction() -> None:
     h = Harness()
     h.direct_invoice("m1")
     h.run()
-    # The same invoice arrives again in a new email (USR-004-03 AC4).
+    calls_before = len(h.extractor.calls)
+    # The very same PDF arrives again in a new email.
+    h.direct_invoice("m2")
+
+    assert _counts(h.run()) == {"duplicate": 1}
+    _assert_duplicate(h, "m2")
+    assert len(h.extractor.calls) == calls_before  # recognised by its bytes: no AI call
+
+
+def test_identical_pdf_is_a_duplicate_even_if_extraction_would_differ() -> None:
+    # Matching on the bytes does not depend on the AI reading the same values twice.
+    h = Harness()
+    h.direct_invoice("m1")
+    h.run()
+    h.gmail.add_message("m2", files=[("szamla.pdf", PDF, INVOICE_PDF)])
+    h.extractor.answers[INVOICE_PDF] = ok(invoice_extraction(invoice_number="INV 1 (copy)"))
+
+    assert _counts(h.run()) == {"duplicate": 1}
+    _assert_duplicate(h, "m2")
+
+
+def test_booked_invoice_in_a_different_pdf_is_a_duplicate() -> None:
+    # USR-004-03 AC4: same external ID + provider, e.g. a re-scanned copy.
+    h = Harness()
+    h.direct_invoice("m1")
+    h.run()
     h.direct_invoice("m2", content=INVOICE_PDF_2)
 
-    assert _counts(h.run()) == {"processed": 1}
-    assert h.sheets.appends == 1
-    assert h.drive.uploads == 1
-    assert h.gmail.kibit_labels_of("m2") == {LABELS.processed}
+    assert _counts(h.run()) == {"duplicate": 1}
+    _assert_duplicate(h, "m2")
 
 
-def test_same_invoice_twice_in_one_run_is_booked_once() -> None:
+def test_resent_mismatching_tig_invoice_gets_no_second_draft() -> None:
+    h = Harness()
+    h.tig_thread(tig=ok(tig_extraction(quantity="8", total="80 000 Ft")))
+    assert _counts(h.run()) == {"pending": 1}
+    assert len(h.gmail.drafts) == 1
+    # The contractor sends the same invoice again in a new thread.
+    h.gmail.add_message(
+        "inv2",
+        thread_id="t2",
+        sender=CONTRACTOR,
+        subject="Számla INV-1",
+        files=[("INV-1.pdf", PDF, INVOICE_PDF_2)],
+    )
+    h.extractor.answers[INVOICE_PDF_2] = ok(invoice_extraction())
+
+    assert _counts(h.run()) == {"duplicate": 1}
+    assert len(h.gmail.drafts) == 1
+    assert h.gmail.kibit_labels_of("inv2") == {LABELS.duplicate}
+
+
+def test_same_invoice_twice_in_one_run_books_once_and_flags_the_second() -> None:
     h = Harness()
     h.direct_invoice("m1")
     h.direct_invoice("m2", content=INVOICE_PDF_2)
 
-    assert _counts(h.run()) == {"processed": 2}
+    assert _counts(h.run()) == {"processed": 1, "duplicate": 1}
     assert h.sheets.appends == 1
     assert h.drive.uploads == 1
+
+
+def test_own_earlier_filing_is_not_a_duplicate_of_itself() -> None:
+    # Filed and booked, but the run died before labelling: the rerun must finish it as
+    # processed, not call it a duplicate of its own filing.
+    h = Harness()
+    h.direct_invoice("m1")
+    h.gmail.fail_once["apply_label"] = _http_error(503)
+
+    assert _counts(h.run()) == {"errors": 1}
+    assert h.sheets.appends == 1
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert h.gmail.kibit_labels_of("m1") == {LABELS.processed}
+    assert h.sheets.appends == 1
+    assert h.drive.uploads == 1
+
+
+def test_duplicate_label_is_terminal() -> None:
+    h = Harness()
+    h.direct_invoice("m1")
+    h.run()
+    h.direct_invoice("m2")
+    h.run()
+    writes = list(h.gmail.writes)
+
+    h.gmail.messages["m2"].labels.add("UNREAD")  # even if someone marks it unread
+    assert _counts(h.run()) == {}
+    assert h.gmail.writes == writes
 
 
 def test_duplicate_check_failure_leaves_the_email_untouched_and_unbooked() -> None:

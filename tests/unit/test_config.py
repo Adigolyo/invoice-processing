@@ -159,3 +159,25 @@ def test_invalid_values_raise_config_error_naming_the_key(
 
 def test_config_error_is_a_value_error() -> None:
     assert issubclass(ConfigError, ValueError)
+
+
+# --- Duplicate label (optional key) ------------------------------------------------------
+
+
+def test_duplicate_label_defaults_when_the_key_is_absent() -> None:
+    # Optional so existing Config tabs keep working; add the key to rename the label.
+    assert Config.from_mapping(_valid_mapping()).labels.duplicate == "Kibit/Duplicate"
+
+
+def test_duplicate_label_comes_from_config_when_set() -> None:
+    raw = {**_valid_mapping(), "label_duplicate": "Acme/Dup"}
+    assert Config.from_mapping(raw).labels.duplicate == "Acme/Dup"
+
+
+def test_blank_duplicate_label_falls_back_to_the_default() -> None:
+    raw = {**_valid_mapping(), "label_duplicate": "  "}
+    assert Config.from_mapping(raw).labels.duplicate == "Kibit/Duplicate"
+
+
+def test_duplicate_label_is_not_a_required_key() -> None:
+    assert "label_duplicate" not in REQUIRED_KEYS

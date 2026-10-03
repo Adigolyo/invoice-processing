@@ -71,9 +71,9 @@ def test_non_kibit_labels_are_never_removed() -> None:
 
 
 def test_outcome_label_names_come_from_config() -> None:
-    custom = LabelNames("A/Done", "A/Wait", "A/Look", "A/Tig")
+    custom = LabelNames("A/Done", "A/Wait", "A/Look", "A/Tig", "A/Dup")
 
-    assert outcome_label_names(custom) == ("A/Done", "A/Wait", "A/Look", "A/Tig")
+    assert outcome_label_names(custom) == ("A/Done", "A/Wait", "A/Look", "A/Tig", "A/Dup")
     assert plan_labels(Outcome.PROCESSED, UNREAD, custom).add == "A/Done"
 
 
@@ -94,3 +94,14 @@ def test_validate_label_names_rejects_duplicate_blank_or_system_names(
 ) -> None:
     with pytest.raises(ConfigError):
         validate_label_names(labels)
+
+
+def test_duplicate_is_labelled_and_marked_read() -> None:
+    plan = plan_labels(Outcome.DUPLICATE, UNREAD, LabelNames("P", "Q", "R", "S", "D"))
+    assert plan.add == "D"
+    assert plan.mark_read is True
+
+
+def test_duplicate_label_must_be_distinct() -> None:
+    with pytest.raises(ConfigError):
+        validate_label_names(LabelNames("P", "Q", "R", "S", "P"))

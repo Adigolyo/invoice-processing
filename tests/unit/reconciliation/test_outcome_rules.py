@@ -92,7 +92,13 @@ def _match() -> ComparisonResult:
 
 
 def test_outcome_has_exactly_the_four_adr3_states() -> None:
-    assert {o.value for o in Outcome} == {"processed", "pending", "needs_review", "awaiting_tig"}
+    assert {o.value for o in Outcome} == {
+        "processed",
+        "pending",
+        "needs_review",
+        "awaiting_tig",
+        "duplicate",
+    }
 
 
 def test_outcome_values_are_strings_for_the_run_summary() -> None:
@@ -413,3 +419,11 @@ def test_answer_key_pair_outcome(pair: dict[str, Any]) -> None:
     expected = Outcome.PENDING if pair["expected_outcome"] == "mismatch" else Outcome.PROCESSED
     assert outcome is expected
     assert should_file_and_book(outcome) is True
+
+
+def test_duplicate_is_terminal_and_never_filed_or_booked() -> None:
+    assert Outcome.DUPLICATE == "duplicate"
+    assert should_file_and_book(Outcome.DUPLICATE) is False
+    assert is_reevaluated(Outcome.DUPLICATE) is False
+    assert outcome_label(Outcome.DUPLICATE, LABELS) == LABELS.duplicate
+    assert needs_evaluation({LABELS.duplicate}, LABELS) is False

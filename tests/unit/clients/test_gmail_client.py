@@ -158,15 +158,22 @@ class FakeGmail:
 def test_candidate_query_matches_the_design_for_default_label_names() -> None:
     assert build_candidate_query(LABELS) == (
         "in:inbox is:unread -label:Kibit/Processed -label:Kibit/Pending -label:Kibit/NeedsReview"
+        " -label:Kibit/Duplicate"
     )
 
 
 def test_candidate_query_is_built_from_config_labels_not_hardcoded() -> None:
     labels = LabelNames(
-        processed="Acme/Done", pending="Acme/Wait", needs_review="Acme/Check", awaiting_tig="X"
+        processed="Acme/Done",
+        pending="Acme/Wait",
+        needs_review="Acme/Check",
+        awaiting_tig="X",
+        duplicate="Acme/Dup",
     )
     query = build_candidate_query(labels)
-    assert query == "in:inbox is:unread -label:Acme/Done -label:Acme/Wait -label:Acme/Check"
+    assert query == (
+        "in:inbox is:unread -label:Acme/Done -label:Acme/Wait -label:Acme/Check -label:Acme/Dup"
+    )
     assert "Kibit" not in query
 
 

@@ -108,6 +108,11 @@ class FakeDrive:
         ]
         page = [
             {"id": f["id"], "name": f["name"], "mimeType": f["mimeType"], "parents": f["parents"]}
+            | (
+                {"appProperties": f.get("appProperties", {})}
+                if "appProperties" in kwargs["fields"]
+                else {}
+            )
             for f in matches
         ]
         return _request({"files": page})
@@ -573,3 +578,33 @@ def test_find_filed_by_source_rejects_blank_ids_before_any_api_call(
 def test_module_exports() -> None:
     assert "DriveClient" in drive_client.__all__
     assert "FiledFileRef" in drive_client.__all__
+
+
+# --- find_filed_by_attachment (duplicate PDFs) ------------------------------------------
+
+
+def test_find_filed_by_attachment_matches_the_fingerprint_across_messages() -> None:
+    fake = FakeDrive()
+    folder = fake.add("2405", ROOT, FOLDER_MIME_TYPE)
+    fake.add(
+        "2405_001_A.pdf",
+        folder,
+        app_properties={"kibitSourceMessageId": "m1", "kibitSourceAttachment": KEY},
+    )
+    fake.add(
+        "2405_002_B.pdf",
+        folder,
+        app_properties={"kibitSourceMessageId": "m2", "kibitSourceAttachment": "sha256:other"},
+    )
+
+    found = fake.client().find_filed_by_attachment(KEY)
+
+    q = fake.files_resource.list.call_args.kwargs["q"]
+    assert "kibitSourceMessageId" not in q
+    assert f"key='kibitSourceAttachment' and value='{KEY}'" in q
+    assert [(f.name, f.source_message_id) for f in found] == [("2405_001_A.pdf", "m1")]
+
+
+def test_find_filed_by_attachment_rejects_a_blank_key() -> None:
+    with pytest.raises(ValueError):
+        FakeDrive().client().find_filed_by_attachment("  ")
