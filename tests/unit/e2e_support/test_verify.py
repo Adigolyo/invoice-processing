@@ -68,7 +68,7 @@ def perfect_snapshot() -> dict[str, Any]:
     candidates: list[dict[str, Any]] = []
     for i, p in enumerate(PAIRS):
         seq[p.yymm] = seq.get(p.yymm, 0) + 1
-        registry = f"{p.yymm}{seq[p.yymm]:03d}{p.supplier8}"
+        registry = f"{p.yymm}_{seq[p.yymm]:03d}_{p.supplier8}"
         net: Any = int(p.net) if p.net == p.net.to_integral_value() else float(p.net)
         gross: Any = int(p.gross) if p.gross == p.gross.to_integral_value() else float(p.gross)
         ledger.append(
@@ -255,7 +255,7 @@ def test_registry_number_shape_is_checked() -> None:
     v = _verdict(snapshot, MISMATCH)
     assert any("registry number" in f for f in v.failures)
 
-    row[0] = good[:7] + "CKFTX"
+    row[0] = good[:9] + "CKFTX"
     assert any("registry number" in f for f in _verdict(snapshot, MISMATCH).failures)
 
 
@@ -333,17 +333,26 @@ def test_extra_discrepancy_lines_are_reported() -> None:
 
 
 def test_month_sequence_problems() -> None:
-    assert month_sequence_problems(["2610001AKFT", "2610002BKFT", "2611001CKFT"]) == []
-    gap = month_sequence_problems(["2610001AKFT", "2610003BKFT"])
+    assert month_sequence_problems(["2610_001_AKFT", "2610_002_BKFT", "2611_001_CKFT"]) == []
+    gap = month_sequence_problems(["2610_001_AKFT", "2610_003_BKFT"])
     assert gap and "2610" in gap[0]
-    dup = month_sequence_problems(["2610001AKFT", "2610001BKFT"])
+    dup = month_sequence_problems(["2610_001_AKFT", "2610_001_BKFT"])
     assert dup and "2610" in dup[0]
     assert month_sequence_problems(["garbage"]) != []
+    # The pipeline writes YYMM_seq_SUPPLIER; the old unseparated form is a failure.
+    assert month_sequence_problems(["2610001AKFT"]) != []
+
+
+def test_unseparated_registry_number_is_a_failure() -> None:
+    snapshot = perfect_snapshot()
+    row = _row(snapshot, MISMATCH)
+    row[0] = row[0].replace("_", "")
+    assert any("registry number" in f for f in _verdict(snapshot, MISMATCH).failures)
 
 
 def test_global_problems_catch_extras_gaps_and_touched_tigs() -> None:
     snapshot = perfect_snapshot()
-    snapshot["ledger"].append(["2610099ZKFT", "Z Kft.", "INV-Z", "tig", "EUR", 1, 1, "x"])
+    snapshot["ledger"].append(["2610_099_ZKFT", "Z Kft.", "INV-Z", "tig", "EUR", 1, 1, "x"])
     snapshot["drive"]["folders"]["2610"].append("stray.pdf")
     snapshot["drive"]["root_files"].append("loose.pdf")
     snapshot["messages"][MATCH]["tig"]["labels"] = [LABELS["processed"]]
@@ -380,7 +389,7 @@ def test_idempotency_problems_report_every_drift() -> None:
     first = perfect_snapshot()
     second = copy.deepcopy(first)
     second["ledger"].append(list(second["ledger"][0]))
-    second["drive"]["folders"]["2611"].append("2611020AKFT.pdf")
+    second["drive"]["folders"]["2611"].append("2611_020_AKFT.pdf")
     second["messages"][MISMATCH]["drafts"].append({"to": "x", "body": "y"})
     second["messages"][MATCH]["invoice"]["labels"] = [LABELS["pending"]]
     second["messages"][MATCH]["tig"]["unread"] = False
@@ -390,7 +399,7 @@ def test_idempotency_problems_report_every_drift() -> None:
     }
     problems = " | ".join(idempotency_problems(first, second))
     assert "ledger rows 32 -> 33" in problems
-    assert "2611020AKFT.pdf" in problems
+    assert "2611_020_AKFT.pdf" in problems
     assert "drafts" in problems and MISMATCH in problems
     assert "labels" in problems and MATCH in problems
     assert "read state" in problems
