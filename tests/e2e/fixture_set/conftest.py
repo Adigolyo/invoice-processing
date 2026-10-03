@@ -235,6 +235,7 @@ def e2e_run(e2e_env: LiveEnv, request: pytest.FixtureRequest) -> Iterator[E2ERun
                     credentials,
                     run_env,
                     extractor_factory=extraction_log.factory(run),
+                    candidate_scope=workspace.candidate_scope(run_id),
                 ),
                 attempts=RATE_LIMIT_ATTEMPTS,
                 wait_s=RATE_LIMIT_WAIT_S,

@@ -96,6 +96,12 @@ def retry_rate_limited[T](
 KEEP_ENV = "KIBIT_E2E_KEEP"
 
 
+def candidate_scope(run_id: str) -> str:
+    """Gmail search term matching only this run's seeded mail (its subject marker), so a
+    run never processes anyone's manual test mail in the shared sandbox inbox."""
+    return f'subject:"Kibit E2E {run_id}"'
+
+
 def should_clean_up(*, tests_failed: int) -> bool:
     """Trash a run's ledger and folder only when every test passed and ``KIBIT_E2E_KEEP``
     is not ``1``. A failed run's artefacts are kept for debugging."""

@@ -59,8 +59,12 @@ def run_with_credentials(
     *,
     service_builder: ServiceBuilder = build_service,
     extractor_factory: ExtractorFactory = build_extractor,
+    candidate_scope: str | None = None,
 ) -> RunSummary:
-    """Run one cycle against the Workspace account the ``credentials`` belong to."""
+    """Run one cycle against the Workspace account the ``credentials`` belong to.
+
+    ``candidate_scope`` narrows the inbox search (E2E suite only; see ``GmailClient``).
+    """
     spreadsheet_id = env.get(LEDGER_SPREADSHEET_ID_ENV, "").strip()
     if not spreadsheet_id:
         raise PipelineConfigurationError(f"{LEDGER_SPREADSHEET_ID_ENV} is not set")
@@ -74,7 +78,11 @@ def run_with_credentials(
                 f"{DRIVE_ROOT_FOLDER_ID_ENV} does not match the Config tab's "
                 "drive_root_folder_id; refusing to file into an unexpected folder"
             )
-        gmail = GmailClient(service_builder("gmail", "v1", credentials), config.labels)
+        gmail = GmailClient(
+            service_builder("gmail", "v1", credentials),
+            config.labels,
+            candidate_scope=candidate_scope,
+        )
         drive = DriveClient(service_builder("drive", "v3", credentials), root)
         # Drive keeps a trashed file working by ID, so a ledger or root folder deleted
         # by mistake would otherwise keep being written to, out of sight, until the trash

@@ -96,14 +96,20 @@ def _quote_label(name: str) -> str:
     return name
 
 
-def build_candidate_query(labels: LabelNames) -> str:
+def build_candidate_query(labels: LabelNames, scope: str | None = None) -> str:
     """Gmail search for unread inbox mail not yet in a terminal Kibit state.
+
+    ``scope`` (a Gmail search term) narrows it further; the E2E suite uses it to see only
+    its own seeded mail. The deployed service never sets it.
 
     ``labels.awaiting_tig`` is deliberately *not* excluded: those threads are re-evaluated
     every run (ADR 3, USR-005-04).
     """
     excluded = (labels.processed, labels.pending, labels.needs_review, labels.duplicate)
-    return " ".join(["in:inbox", "is:unread", *(f"-label:{_quote_label(n)}" for n in excluded)])
+    terms = ["in:inbox", "is:unread", *(f"-label:{_quote_label(n)}" for n in excluded)]
+    if scope and scope.strip():
+        terms.append(scope.strip())
+    return " ".join(terms)
 
 
 def _execute(request: Any) -> dict[str, Any]:
@@ -160,11 +166,24 @@ def _attachment_parts(payload: Mapping[str, Any]) -> Iterator[tuple[Attachment, 
 class GmailClient:
     """Gmail operations used by the pipeline, for one mailbox (``user_id``)."""
 
-    def __init__(self, service: GmailResource, labels: LabelNames, user_id: str = "me") -> None:
+    def __init__(
+        self,
+        service: GmailResource,
+        labels: LabelNames,
+        user_id: str = "me",
+        *,
+        candidate_scope: str | None = None,
+    ) -> None:
         self._service = service
         self._labels = labels
         self._user_id = user_id
+        self._candidate_scope = candidate_scope
         self._label_ids_by_name: dict[str, str] | None = None
+
+    @property
+    def candidate_query(self) -> str:
+        """The Gmail search ``list_candidates`` runs."""
+        return build_candidate_query(self._labels, self._candidate_scope)
 
     # --- reads ---------------------------------------------------------------------------
 
@@ -174,7 +193,7 @@ class GmailClient:
         Read-only: no label or read-state is changed. Any API error raises before a
         partial list is returned.
         """
-        query = build_candidate_query(self._labels)
+        query = self.candidate_query
         names = self._label_names_by_id()
         candidates: list[Candidate] = []
         for message_id in self._list_message_ids(query):
