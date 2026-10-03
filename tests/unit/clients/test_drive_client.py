@@ -16,6 +16,7 @@ from intake.clients.drive_client import (
     DriveClient,
     DriveConflictError,
     DriveResponseError,
+    DriveTrashedError,
     FiledFileRef,
     SavedFile,
 )
@@ -623,3 +624,34 @@ def test_find_filed_by_attachment_ignores_files_outside_this_root() -> None:
     )
 
     assert fake.client().find_filed_by_attachment(KEY) == []
+
+
+# --- ensure_not_trashed (ledger / root safeguard) ----------------------------------------
+
+
+@pytest.mark.parametrize("trashed", [True])
+def test_ensure_not_trashed_raises_for_a_trashed_file(trashed: bool) -> None:
+    fake = FakeDrive()
+    fake.files_resource.get.return_value = _request({"trashed": trashed})
+
+    with pytest.raises(DriveTrashedError, match="ledger spreadsheet"):
+        fake.client().ensure_not_trashed("sheet-1", "ledger spreadsheet")
+
+    kwargs = fake.files_resource.get.call_args.kwargs
+    assert kwargs == {"fileId": "sheet-1", "fields": "trashed", "supportsAllDrives": True}
+
+
+@pytest.mark.parametrize("response", [{"trashed": False}, {}])
+def test_ensure_not_trashed_passes_for_a_live_file(response: dict[str, Any]) -> None:
+    fake = FakeDrive()
+    fake.files_resource.get.return_value = _request(response)
+
+    fake.client().ensure_not_trashed("sheet-1", "ledger spreadsheet")
+
+
+def test_ensure_not_trashed_propagates_api_errors() -> None:
+    fake = FakeDrive()
+    fake.files_resource.get.return_value = _request(error=_http_error(404))
+
+    with pytest.raises(HttpError):
+        fake.client().ensure_not_trashed("gone", "ledger spreadsheet")

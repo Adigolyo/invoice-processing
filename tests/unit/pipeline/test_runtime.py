@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intake.clients.drive_client import DriveClient
+from intake.clients.drive_client import DriveClient, DriveTrashedError
 from intake.clients.gmail_client import GmailClient
 from intake.clients.sheets_client import SheetsClient
 from intake.config import Config, ConfigError
@@ -147,3 +147,56 @@ def test_default_service_builder_disables_the_discovery_cache(
         "credentials": creds,
         "cache_discovery": False,
     }
+
+
+# --- safeguard: never work against a trashed ledger or Drive root ------------------------
+
+
+def _drive_with_trashed(trashed_ids: set[str]) -> Callable[[str, str, Any], Any]:
+    def build(api: str, version: str, credentials: Any) -> Any:
+        service = MagicMock(name=api)
+        if api == "drive":
+
+            def get(*, fileId: str, **_: Any) -> Any:  # noqa: N803 - Drive's keyword
+                request = MagicMock()
+                request.execute.return_value = {"trashed": fileId in trashed_ids}
+                return request
+
+            service.files.return_value.get.side_effect = get
+        return service
+
+    return build
+
+
+@pytest.mark.parametrize(
+    ("trashed", "what"),
+    [({"sheet-123"}, "ledger spreadsheet"), ({"root-folder-id"}, "Drive root folder")],
+)
+def test_a_trashed_ledger_or_root_stops_the_run_before_any_mail_is_touched(
+    monkeypatch: pytest.MonkeyPatch, trashed: set[str], what: str
+) -> None:
+    captured = _capture(monkeypatch)
+    runtime.run_with_credentials(
+        object(),
+        ENV,
+        service_builder=_drive_with_trashed(trashed),
+        extractor_factory=lambda e, c: FakeExtractor(),
+    )
+
+    assert captured.connect is not None
+    with pytest.raises(DriveTrashedError, match=what):
+        captured.connect(make_config(drive_root_folder_id="root-folder-id"))
+
+
+def test_live_ledger_and_root_pass_the_safeguard(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = _capture(monkeypatch)
+    runtime.run_with_credentials(
+        object(),
+        ENV,
+        service_builder=_drive_with_trashed(set()),
+        extractor_factory=lambda e, c: FakeExtractor(),
+    )
+
+    assert captured.connect is not None
+    clients = captured.connect(make_config(drive_root_folder_id="root-folder-id"))
+    assert isinstance(clients.drive, DriveClient)
