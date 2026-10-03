@@ -142,9 +142,13 @@ def test_missing_tig_outcome_true_for_tig_route_without_any_tig() -> None:
     assert missing_tig_outcome(Route.TIG, _missing()) is True
 
 
-def test_no_tig_in_thread_yields_awaiting_tig() -> None:
-    """USR-005-04 AC1."""
-    assert tig_outcome(Route.TIG, _missing()) is Outcome.AWAITING_TIG
+def test_no_tig_in_thread_yields_processed() -> None:
+    """A TIG is always sent out first and the invoice is the reply, so an invoice whose
+    thread holds no TIG has nothing to reconcile: it is filed, booked and processed
+    (project owner decision, 2026-10-03; replaces USR-005-04's AwaitingTIG)."""
+    outcome = tig_outcome(Route.TIG, _missing())
+    assert outcome is Outcome.PROCESSED
+    assert should_file_and_book(outcome) is True
 
 
 def test_awaiting_tig_is_neither_filed_nor_booked() -> None:
@@ -178,9 +182,8 @@ def test_missing_tig_outcome_false_whenever_a_tig_exists(lookup: TigLookup) -> N
 def test_tig_arriving_later_lets_normal_reconciliation_proceed(
     comparison: ComparisonResult,
 ) -> None:
-    """USR-005-04 AC4: run 1 has no TIG; run 2 finds one and reconciles normally."""
-    first = tig_outcome(Route.TIG, _missing())
-    assert first is Outcome.AWAITING_TIG
+    """A thread labelled AwaitingTIG (before the rule change) is still re-evaluated, and
+    a TIG found there is reconciled normally."""
     assert needs_evaluation({LABELS.awaiting_tig}, LABELS) is True
 
     second = tig_outcome(Route.TIG, _found(), comparison)
@@ -192,13 +195,14 @@ def test_tig_arriving_later_lets_normal_reconciliation_proceed(
     assert superseded_labels(second, {LABELS.awaiting_tig}, LABELS) == {LABELS.awaiting_tig}
 
 
-def test_repeated_missing_tig_run_leaves_state_unchanged() -> None:
-    """USR-005-04 AC3: still no TIG on a later cycle: no label added or removed."""
+def test_legacy_awaiting_tig_thread_without_a_tig_becomes_processed() -> None:
     current = {LABELS.awaiting_tig, "INBOX", "UNREAD"}
     outcome = tig_outcome(Route.TIG, _missing())
 
-    assert label_to_apply(outcome, current, LABELS) is None
-    assert superseded_labels(outcome, current, LABELS) == frozenset()
+    assert outcome is Outcome.PROCESSED
+    assert label_to_apply(outcome, current, LABELS) == LABELS.processed
+    assert superseded_labels(outcome, current, LABELS) == {LABELS.awaiting_tig}
+    assert should_file_and_book(outcome) is True
 
 
 @pytest.mark.parametrize("route", [Route.DIRECT, Route.AMBIGUOUS])
@@ -237,7 +241,7 @@ def test_needs_review_mapping_agrees_with_the_lookup_flag_reason() -> None:
     assert _unreadable().flag_reason is FlagReason.INCOMPLETE_DATA
     assert _missing().flag_reason is FlagReason.MISSING_TIG
     assert tig_outcome(Route.TIG, _unreadable()) is Outcome.NEEDS_REVIEW
-    assert tig_outcome(Route.TIG, _missing()) is Outcome.AWAITING_TIG
+    assert tig_outcome(Route.TIG, _missing()) is Outcome.PROCESSED
 
 
 # --- contract guards --------------------------------------------------------------------------

@@ -232,26 +232,31 @@ def test_tig_mismatch_whose_draft_fails_is_still_filed_booked_and_pending(
 # --- missing TIG / AwaitingTIG --------------------------------------------------------------
 
 
-def test_missing_tig_awaits_then_a_later_tig_lets_the_invoice_proceed() -> None:
+def test_contractor_invoice_without_a_tig_is_processed_and_booked() -> None:
+    # A TIG is always sent out first and the invoice is the reply; an invoice whose thread
+    # holds no TIG has nothing to reconcile (project owner decision, 2026-10-03).
     h = Harness()
     h.tig_thread(with_tig=False)
 
-    # USR-005-04 AC1: AwaitingTIG, unread, nothing filed or booked.
-    assert _counts(h.run()) == {"awaiting_tig": 1}
-    assert h.gmail.kibit_labels_of("inv") == {LABELS.awaiting_tig}
-    assert h.gmail.is_unread("inv")
-    _nothing_filed_or_booked(h)
-
-    # AC3: a later run without a TIG changes nothing.
-    writes_before = list(h.gmail.writes)
-    assert _counts(h.run()) == {"awaiting_tig": 1}
-    assert h.gmail.writes == writes_before
-
-    # AC4: a TIG sent into the thread later is picked up; AwaitingTIG is replaced.
-    h.add_tig()
     assert _counts(h.run()) == {"processed": 1}
     assert h.gmail.kibit_labels_of("inv") == {LABELS.processed}
     assert not h.gmail.is_unread("inv")
+    (row,) = h.sheets.rows
+    assert row.inv_type == "tig"
+    assert h.gmail.drafts == []
+
+    # Idempotent: a second run books nothing new.
+    h.run()
+    assert len(h.sheets.rows) == 1
+
+
+def test_thread_left_awaiting_tig_by_the_old_rule_is_processed_next_run() -> None:
+    h = Harness()
+    h.tig_thread(with_tig=False)
+    h.gmail.labels_of("inv").add(LABELS.awaiting_tig)
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert h.gmail.kibit_labels_of("inv") == {LABELS.processed}
     assert ("remove_label", "inv", LABELS.awaiting_tig) in h.gmail.writes
     assert len(h.sheets.rows) == 1
 
