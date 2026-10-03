@@ -18,6 +18,8 @@ Environment:
 
 from __future__ import annotations
 
+import gc
+import logging
 from collections.abc import Callable, Mapping
 from typing import Any, Final
 
@@ -39,6 +41,9 @@ ServiceBuilder = Callable[[str, str, Any], Any]
 ExtractorFactory = Callable[[Mapping[str, str], Config], Extractor]
 
 
+logger = logging.getLogger(__name__)
+
+
 class PipelineConfigurationError(RuntimeError):
     """A required environment variable for a run is missing."""
 
@@ -53,6 +58,21 @@ def build_extractor(env: Mapping[str, str], config: Config) -> Extractor:
     return extractor_from_env(env, currency_map=config.currency_map)
 
 
+def _close_quietly(resource: Any) -> None:
+    """Close a client if it can be closed; a failure to close never fails the run."""
+    close = getattr(resource, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception as exc:  # noqa: BLE001 - best effort, the run's result stands
+        logger.warning(
+            "could not close a client (%s)",
+            type(exc).__name__,
+            extra={"error_type": type(exc).__name__},
+        )
+
+
 def run_with_credentials(
     credentials: Any,
     env: Mapping[str, str],
@@ -64,11 +84,22 @@ def run_with_credentials(
     """Run one cycle against the Workspace account the ``credentials`` belong to.
 
     ``candidate_scope`` narrows the inbox search (E2E suite only; see ``GmailClient``).
+
+    Every client the run opens is closed when it ends, and garbage is collected: the
+    instance serves one run a minute, and left open their connections kept growing its
+    memory until Cloud Run killed it (staging, 2026-10-03).
     """
     spreadsheet_id = env.get(LEDGER_SPREADSHEET_ID_ENV, "").strip()
     if not spreadsheet_id:
         raise PipelineConfigurationError(f"{LEDGER_SPREADSHEET_ID_ENV} is not set")
-    sheets = SheetsClient(service_builder("sheets", "v4", credentials), spreadsheet_id)
+    opened: list[Any] = []
+
+    def open_service(api: str, version: str) -> Any:
+        service = service_builder(api, version, credentials)
+        opened.append(service)
+        return service
+
+    sheets = SheetsClient(open_service("sheets", "v4"), spreadsheet_id)
 
     def connect(config: Config) -> PipelineClients:
         root = config.drive_root_folder_id
@@ -79,23 +110,27 @@ def run_with_credentials(
                 "drive_root_folder_id; refusing to file into an unexpected folder"
             )
         gmail = GmailClient(
-            service_builder("gmail", "v1", credentials),
+            open_service("gmail", "v1"),
             config.labels,
             candidate_scope=candidate_scope,
         )
-        drive = DriveClient(service_builder("drive", "v3", credentials), root)
+        drive = DriveClient(open_service("drive", "v3"), root)
         # Drive keeps a trashed file working by ID, so a ledger or root folder deleted
         # by mistake would otherwise keep being written to, out of sight, until the trash
         # is emptied. Refuse instead: the run fails before any email is touched.
         drive.ensure_not_trashed(spreadsheet_id, "ledger spreadsheet")
         drive.ensure_not_trashed(root, "Drive root folder")
-        return PipelineClients(
-            gmail=gmail,
-            drive=drive,
-            extractor=extractor_factory(env, config),
-        )
+        extractor = extractor_factory(env, config)
+        opened.append(extractor)
+        return PipelineClients(gmail=gmail, drive=drive, extractor=extractor)
 
-    return run_cycle(sheets, connect)
+    try:
+        return run_cycle(sheets, connect)
+    finally:
+        for resource in opened:
+            _close_quietly(resource)
+        opened.clear()
+        gc.collect()
 
 
 def run_from_env(env: Mapping[str, str]) -> RunSummary:

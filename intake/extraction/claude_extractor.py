@@ -187,6 +187,12 @@ class ClaudeExtractor:
     def __repr__(self) -> str:
         return f"ClaudeExtractor(model={self.model!r}, effort={self.effort!r})"
 
+    def close(self) -> None:
+        """Release the HTTP client's connections (one extractor is built per run)."""
+        close = getattr(self._client, "close", None)
+        if callable(close):
+            close()
+
     def extract(
         self, content: bytes, mime_type: str, *, kind: DocumentKind = DocumentKind.INVOICE
     ) -> StageResult[InvoiceExtraction]:

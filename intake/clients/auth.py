@@ -68,9 +68,26 @@ def secret_version_name(project_id: str, secret_id: str, version: str = "latest"
     return f"projects/{project_id}/secrets/{secret_id}/versions/{version}"
 
 
+_secret_manager_client: secretmanager.SecretManagerServiceClient | None = None
+
+
+def _shared_secret_manager_client() -> secretmanager.SecretManagerServiceClient:
+    """One gRPC client per process: a new one per secret per run, never closed, grew the
+    Cloud Run instance's memory by tens of MiB a minute until it was killed."""
+    global _secret_manager_client
+    if _secret_manager_client is None:
+        _secret_manager_client = secretmanager.SecretManagerServiceClient()
+    return _secret_manager_client
+
+
+def reset_secret_manager_client() -> None:
+    """Forget the shared client (tests)."""
+    global _secret_manager_client
+    _secret_manager_client = None
+
+
 def _secret_manager_accessor(name: str) -> str:
-    client = secretmanager.SecretManagerServiceClient()
-    response = client.access_secret_version(name=name)
+    response = _shared_secret_manager_client().access_secret_version(name=name)
     return response.payload.data.decode("utf-8")
 
 
