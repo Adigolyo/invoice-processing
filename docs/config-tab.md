@@ -24,7 +24,6 @@ code: edit the tab, and the next run picks the change up.
 |---|---|
 | `invoice_keywords` | `számla, szamla, invoice, Rechnung, díjbekérő` |
 | `attachment_mime_allowlist` | `application/pdf, image/jpeg, image/png` |
-| `contractor_identifiers` | `dev@contractor-one.hu, contractor-two.example` |
 | `tig_subject_indicators` | `TIG, teljesítésigazolás, teljesitesigazolas` |
 | `currency_map` | `Ft=HUF, HUF=HUF, €=EUR, EUR=EUR, $=USD, USD=USD` |
 | `label_processed` | `Kibit/Processed` |
@@ -43,13 +42,12 @@ code: edit the tab, and the next run picks the change up.
 |---|---|---|
 | `invoice_keywords` | list | Subject keywords that make an unread email an invoice candidate (USR-001-01). |
 | `attachment_mime_allowlist` | list | Attachment MIME types that qualify an email as a candidate, and the only types sent to Gemini or Drive. |
-| `contractor_identifiers` | list | Contractor senders, routed to TIG reconciliation. Use a full address (`dev@x.hu`) or a bare domain (`x.hu` / `@x.hu`) (USR-001-02). |
 | `tig_subject_indicators` | list | Subject terms that route an email from an otherwise unrecognised sender to TIG. |
 | `currency_map` | `symbol=ISO` pairs | Currency symbols and abbreviations mapped to ISO 4217 codes (USR-002-05). |
 | `label_processed` | text | Gmail label for a filed and booked invoice with no open issue. |
 | `label_pending` | text | Gmail label for a filed and booked invoice with an open TIG mismatch. |
 | `label_needs_review` | text | Gmail label for an ambiguous or incomplete invoice. The service never looks at it again. |
-| `label_awaiting_tig` | text | Legacy label. No longer applied: a contractor invoice with no TIG in its thread is processed. Threads that still carry it are re-checked and the label is replaced. |
+| `label_awaiting_tig` | text | Legacy label. No longer applied: an invoice with no TIG in its thread is processed as direct. Threads that still carry it are re-checked and the label is replaced. |
 | `label_duplicate` | text, **optional** | Gmail label for an invoice already filed and booked from another email (identical PDF, or same invoice number and provider). Defaults to `Kibit/Duplicate`. The label must exist in the mailbox. |
 | `sequence_start` | integer ≥ 0 | First sequence number in a new month folder (USR-003-02). |
 | `sequence_width` | integer ≥ 1 | Zero-padded width of the sequence part of the registry number. `sequence_start` must fit in it. |
@@ -85,3 +83,11 @@ underscores (`2611015JKFT`); they still count when the next sequence number is c
 Rows are written with `valueInputOption=RAW`. Text such as external invoice IDs keeps any
 leading zeros. Net and Gross are written as numbers, and the due date as the text
 `YYYY.MM.DD`.
+
+## Routing (no contractor list)
+
+There is no `contractor_identifiers` setting any more (removed 2026-10-03). An invoice is
+compared against a TIG exactly when it replies to one: a TIG-named attachment
+(`TIG-…`, *teljesítésigazolás*) earlier in its email thread puts it on the TIG route,
+whoever sends it. Every other invoice is direct. A `contractor_identifiers` row left in an
+existing Config tab is ignored.

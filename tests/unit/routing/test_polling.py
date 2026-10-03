@@ -30,7 +30,6 @@ def _config(**overrides: Any) -> Config:
     raw: dict[str, Any] = {
         "invoice_keywords": ["számla", "invoice", "díjbekérő"],
         "attachment_mime_allowlist": ["application/pdf", "image/jpeg", "image/png"],
-        "contractor_identifiers": ["dev@contractor.example"],
         "tig_subject_indicators": ["TIG"],
         "currency_map": {"Ft": "HUF"},
         "label_processed": "Kibit/Processed",

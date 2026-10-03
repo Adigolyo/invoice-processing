@@ -49,14 +49,11 @@ LABELS = LabelNames(
     duplicate="Kibit/Duplicate",
 )
 
-CONTRACTOR_DOMAIN = "contractor.example"
-
 
 def make_config(**overrides: Any) -> Config:
     raw: dict[str, Any] = {
         "invoice_keywords": "számla, invoice",
         "attachment_mime_allowlist": "application/pdf, image/*",
-        "contractor_identifiers": CONTRACTOR_DOMAIN,
         "tig_subject_indicators": "TIG, teljesítésigazolás",
         "currency_map": "Ft=HUF, €=EUR, $=USD",
         "label_processed": LABELS.processed,

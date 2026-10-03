@@ -164,7 +164,7 @@ def mailbox_address(gmail: Any) -> str:
 
 
 def create_ledger_and_folder(
-    services: Services, *, spreadsheet_title: str, folder_name: str, contractors: Sequence[str]
+    services: Services, *, spreadsheet_title: str, folder_name: str
 ) -> tuple[str, str]:
     """A fresh spreadsheet (Ledger header + Config) and Drive root folder for one run."""
     if sandbox.find_file(services.drive, folder_name, FOLDER_MIME) is not None:
@@ -177,7 +177,6 @@ def create_ledger_and_folder(
         services.sheets,
         folder_id,
         title=spreadsheet_title,
-        contractor_domains=contractors,
     )
     return spreadsheet_id, folder_id
 

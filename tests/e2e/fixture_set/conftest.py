@@ -8,7 +8,7 @@ inserts 64 emails into the sandbox mailbox and sends 64 documents to AI Compass.
 1. checks the answer key, the sandbox mailbox and that no unfinished E2E invoice from an
    earlier run is still in the inbox (it would be booked into this run's ledger);
 2. creates "Kibit E2E ledger <run-id>" (Ledger header + Config) and "Invoices E2E
-   <run-id>", with the 11 fixture contractor domains as ``contractor_identifiers``;
+   <run-id>" (the sandbox Config; routing needs no contractor list);
 3. seeds all 32 pairs as threads (PM's TIG mail, then the contractor's invoice reply);
 4. runs the pipeline locally (``run_with_credentials``) against the fresh ledger/folder,
    snapshots Sheets/Drive/Gmail, runs it a second time and snapshots again;
@@ -184,17 +184,14 @@ def e2e_run(e2e_env: LiveEnv, request: pytest.FixtureRequest) -> Iterator[E2ERun
     run_id = record["run_id"]
     timings: dict[str, float] = dict(record.get("timings", {}))
     if not resume:
-        contractors = sorted({p.contractor_domain for p in pairs})
         spreadsheet_id, folder_id = workspace.create_ledger_and_folder(
             services,
             spreadsheet_title=verify.spreadsheet_title(run_id),
             folder_name=verify.folder_name(run_id),
-            contractors=contractors,
         )
         record.update(
             spreadsheet_id=spreadsheet_id,
             folder_id=folder_id,
-            contractor_identifiers=contractors,
             mode=f"local run_with_credentials, credentials from {e2e_env.source}",
             model=env.get("AI_COMPASS_MODEL") or "default",
         )

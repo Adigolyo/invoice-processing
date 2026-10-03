@@ -18,9 +18,9 @@ Per candidate (``Orchestrator.process``), in order:
    (``needs_evaluation``); AwaitingTIG is re-evaluated. A message whose only invoice-type
    attachments are TIG documents (e.g. the project manager's certificate email) is not
    an invoice and is skipped without any change.
-2. **Route** (``classify``). AMBIGUOUS -> NeedsReview. A DIRECT invoice whose thread has
-   a TIG-named attachment earlier on is a reply to a TIG: it takes the TIG route
-   (``has_earlier_tig_attachment``), whoever sent it.
+2. **Route**, by the thread only (project owner decision, 2026-10-03; replaces
+   USR-001-02's sender/contractor classification): a TIG-named attachment earlier in the
+   thread (``has_earlier_tig_attachment``) -> TIG route, otherwise DIRECT.
 3. **Attachments.** Downloaded; kept when the MIME type is on
    ``Config.attachment_mime_allowlist`` and the filename does not name a TIG.
    Byte-identical copies count once. None left, or more than one distinct invoice ->
@@ -132,7 +132,7 @@ from intake.registry.sequence import (
     registry_filename_pattern,
 )
 from intake.registry.supplier_id import normalize_supplier
-from intake.routing import classify, poll_candidates
+from intake.routing import poll_candidates
 
 logger = logging.getLogger(__name__)
 
@@ -413,17 +413,16 @@ class Orchestrator:
             raise _Stop(None, "tig_document_only")
 
         with self._stage("route", message_id):
-            decision = classify(candidate.sender, candidate.subject, self._config)
-            if decision.is_ambiguous:
-                raise _Stop(Outcome.NEEDS_REVIEW, "ambiguous_route")
-            route = decision.route
-            # A reply to a TIG (a TIG-named file earlier in the thread) is the TIG flow,
-            # whoever sends the invoice back: the sender list alone misses replies from
-            # addresses not configured as contractors.
-            if route is Route.DIRECT and has_earlier_tig_attachment(
-                self._gmail.get_thread(candidate.thread_id), message_id
-            ):
-                route = Route.TIG
+            # The TIG flow is a TIG sent out and the invoice coming back as a reply, so the
+            # thread decides, never the sender: a TIG-named file earlier in the thread ->
+            # TIG route (compared against that TIG); anything else -> direct.
+            route = (
+                Route.TIG
+                if has_earlier_tig_attachment(
+                    self._gmail.get_thread(candidate.thread_id), message_id
+                )
+                else Route.DIRECT
+            )
 
         with self._stage("attachments", message_id):
             invoice = self._invoice_attachment(message_id)

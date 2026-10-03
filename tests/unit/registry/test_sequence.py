@@ -54,7 +54,6 @@ def _config(start: int = 1, width: int = 3) -> Config:
         {
             "invoice_keywords": "szamla",
             "attachment_mime_allowlist": "application/pdf",
-            "contractor_identifiers": "contractor@example.com",
             "tig_subject_indicators": "TIG",
             "currency_map": "Ft=HUF",
             "label_processed": "Kibit/Processed",

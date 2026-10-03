@@ -837,7 +837,6 @@ def test_a_tig_subject_alone_does_not_pull_a_direct_invoice_into_the_tig_flow() 
     assert [r.inv_type for r in h.sheets.rows] == ["direct"]
 
 
-
 def test_routing_ignores_the_sender_only_the_thread_decides() -> None:
     # A contractor-looking sender without a TIG in the thread is direct ...
     h = Harness()

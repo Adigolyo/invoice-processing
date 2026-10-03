@@ -92,7 +92,7 @@ def _contractor(pair: dict[str, Any]) -> str:
 
 
 def test_fixture_pairs_end_in_their_documented_states() -> None:
-    config = make_config(contractor_identifiers="b-kft.example, c-kft.example")
+    config = make_config()
     gmail, drive, sheets, extractor = FakeGmail(), FakeDrive(), FakeSheets(config), FakeExtractor()
 
     direct = PAIRS[DIRECT]

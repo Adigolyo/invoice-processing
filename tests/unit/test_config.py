@@ -12,7 +12,6 @@ def _valid_mapping() -> dict[str, Any]:
     return {
         "invoice_keywords": ["számla", "invoice"],
         "attachment_mime_allowlist": ["application/pdf", "image/jpeg", "image/png"],
-        "contractor_identifiers": ["dev@contractor.example"],
         "tig_subject_indicators": ["TIG", "teljesítésigazolás"],
         "currency_map": {"Ft": "HUF", "€": "EUR", "$": "USD"},
         "label_processed": "Kibit/Processed",
@@ -51,7 +50,6 @@ def test_from_mapping_accepts_sheet_style_string_cells() -> None:
     mapping.update(
         invoice_keywords=" számla , invoice ,, ",
         attachment_mime_allowlist="application/pdf,image/png",
-        contractor_identifiers="dev@contractor.example",
         tig_subject_indicators="TIG",
         currency_map="Ft=HUF, €=EUR , huf = huf",
         sequence_start="5",
@@ -180,7 +178,6 @@ def test_blank_duplicate_label_falls_back_to_the_default() -> None:
 
 def test_duplicate_label_is_not_a_required_key() -> None:
     assert "label_duplicate" not in REQUIRED_KEYS
-
 
 
 def test_contractor_identifiers_is_no_longer_a_setting() -> None:

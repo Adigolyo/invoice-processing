@@ -43,7 +43,6 @@ def test_map_from_a_config_tab_string_is_used() -> None:
         {
             "invoice_keywords": "számla",
             "attachment_mime_allowlist": "application/pdf",
-            "contractor_identifiers": "contractor@example.com",
             "tig_subject_indicators": "TIG",
             "currency_map": "Ft=HUF, €=EUR, $=USD",
             "label_processed": "Kibit/Processed",

@@ -53,9 +53,8 @@ ones. Nothing is ever deleted.
 2. **Fresh ledger and folder**, named by the run id (UTC timestamp `YYYYMMDD-HHMMSS`):
    spreadsheet **"Kibit E2E ledger &lt;run-id&gt;"** (Ledger header A–H plus a Config tab) and
    Drive folder **"Invoices E2E &lt;run-id&gt;"**. The Config tab is the sandbox one
-   (`scripts/setup_sandbox.py: config_rows`), except that `contractor_identifiers` lists the
-   11 fixture contractor domains `a-kft.example` … `k-kft.example`. Each domain is derived
-   from the answer key's supplier `"X Kft."`.
+   (`scripts/setup_sandbox.py: config_rows`). Routing needs no contractor list: each
+   invoice replies to its TIG, so the thread puts it on the TIG route.
 3. **Seeding.** Each pair becomes one thread: the project manager's TIG mail
    (`projekt@kibitfinance.com`, `TIG-*.pdf`), then the contractor's invoice as a reply
    (`szamlazas@<x>-kft.example`, `In-Reply-To`/`References` set, same `threadId`). The

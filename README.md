@@ -3,8 +3,8 @@
 Kibit's back office currently names, files and books supplier and contractor invoices by
 hand. This project builds an automated intake pipeline that watches a Gmail inbox,
 extracts invoice data with a multimodal AI model, files a correctly named PDF to Google
-Drive, and writes a correct row to a Google Sheets ledger. Contractor invoices are also
-reconciled against the performance certificates (TIG) sent earlier in the same thread.
+Drive, and writes a correct row to a Google Sheets ledger. An invoice that replies to a
+performance certificate (TIG) sent earlier in the same thread is also reconciled against it.
 The primary users are the bookkeeping function and, for TIG mismatches, the project
 manager who sent the certificate.
 
@@ -23,7 +23,7 @@ A single Python service ("the Intake Service", a modular monolith) runs on **Clo
 Each run loads its configuration from the ledger sheet's `Config` tab and lists the
 candidate Gmail messages. It then processes them **one at a time** through this pipeline:
 
-Classify → Extract (Claude via AI Compass) → Normalize → [TIG route: Reconcile] →
+Route (by thread) → Extract (Claude via AI Compass) → Normalize → [TIG route: Reconcile] →
 Assign registry number → File to Drive → Book to ledger → Label.
 
 There is no database. Gmail labels hold the processing state, Drive holds the files, and
@@ -37,7 +37,7 @@ Gmail labels used as the state machine:
 | `Kibit/Processed` | Filed and booked, no issue |
 | `Kibit/Pending` | Filed and booked, TIG mismatch outstanding (a draft reply was created) |
 | `Kibit/NeedsReview` | Ambiguous route or incomplete data. Never retried automatically |
-| `Kibit/AwaitingTIG` | No longer applied. A contractor invoice with no TIG in its thread is processed and booked like any other; threads labelled by earlier versions are processed on the next run |
+| `Kibit/AwaitingTIG` | No longer applied. An invoice with no TIG in its thread is processed and booked as direct; threads labelled by earlier versions are processed on the next run |
 | `Kibit/Duplicate` | Already filed and booked from another email: the identical PDF, or the same invoice number from the same provider. Nothing is filed or booked again, and no draft reply is made |
 
 ```mermaid
@@ -45,7 +45,7 @@ flowchart TB
     Scheduler([Cloud Scheduler<br/>every minute]) -->|OIDC POST /run| Orchestrator
     subgraph Run[Intake Service on Cloud Run]
         Orchestrator[Pipeline Orchestrator]
-        Classify[Inbox Poll & Route Classifier]
+        Classify[Inbox Poll & Thread Routing]
         Extract[Extractor + Normalizers]
         Reconcile[TIG Matcher & Draft Composer]
         Registry[Registry Number & Drive Filing]

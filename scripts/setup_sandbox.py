@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import base64
 import sys
-from collections.abc import Sequence
 from datetime import UTC, datetime
 from email.message import EmailMessage
 from email.utils import format_datetime
@@ -48,19 +47,15 @@ SPREADSHEET_TITLE = "Kibit invoice ledger (sandbox)"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 SHEET_MIME = "application/vnd.google-apps.spreadsheet"
 
-CONTRACTOR_DOMAINS = ("b-kft.example", "c-kft.example", "d-kft.example")
 PM_ADDRESS = "projekt@kibitfinance.com"
 MAILBOX = "invoice@kibitfinance.com"
 
 
-def config_rows(
-    drive_root_folder_id: str, contractor_domains: Sequence[str] = CONTRACTOR_DOMAINS
-) -> list[list[str]]:
+def config_rows(drive_root_folder_id: str) -> list[list[str]]:
     return [
         ["key", "value"],
         ["invoice_keywords", "számla, szamla, invoice, Rechnung, díjbekérő"],
         ["attachment_mime_allowlist", "application/pdf, image/jpeg, image/png"],
-        ["contractor_identifiers", ", ".join(contractor_domains)],
         ["tig_subject_indicators", "TIG, teljesítésigazolás, teljesitesigazolas"],
         ["currency_map", "Ft=HUF, HUF=HUF, €=EUR, EUR=EUR, $=USD, USD=USD"],
         ["label_processed", LABELS[0]],
@@ -144,7 +139,6 @@ def ensure_spreadsheet(
     drive_root_folder_id: str,
     *,
     title: str = SPREADSHEET_TITLE,
-    contractor_domains: Sequence[str] = CONTRACTOR_DOMAINS,
 ) -> str:
     spreadsheet_id = find_file(drive, title, SHEET_MIME)
     if spreadsheet_id is None:
@@ -177,7 +171,7 @@ def ensure_spreadsheet(
             body={"values": [list(LEDGER_HEADER)]},
         ).execute()
         print("ledger header written")
-    rows = config_rows(drive_root_folder_id, contractor_domains)
+    rows = config_rows(drive_root_folder_id)
     values.update(
         spreadsheetId=spreadsheet_id,
         range=f"'Config'!A1:B{len(rows)}",

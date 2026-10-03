@@ -16,12 +16,13 @@
   default; replaces the design's Gemini choice, ADR 4); Gemini remains selectable.
   OAuth refresh token in Secret Manager. No database: Gmail labels, Drive and
   Sheets are the only persistence. Configuration lives in the ledger sheet's `Config` tab,
-  so never hardcode keyword lists, contractor IDs, currency maps or label names.
+  so never hardcode keyword lists, currency maps or label names. Routing is by thread:
+  an invoice replying to a TIG (TIG-named file earlier in the thread) takes the TIG route.
 - **Directory layout** (package `intake/`):
   - `clients/`: Gmail, Drive, Sheets and auth wrappers
   - `extraction/`: the `Extractor` protocol, the AI Compass (Claude) and Gemini backends
   - `normalization/`: dates, amounts, currency, origin, performance date
-  - `routing/`: polling and the route classifier
+  - `routing/`: polling (routing itself is in the orchestrator, by thread)
   - `registry/`: supplier ID, sequence, registry number, filing
   - `ledger/`: booking and dedupe
   - `reconciliation/`: TIG matcher, draft reply, outcome rules

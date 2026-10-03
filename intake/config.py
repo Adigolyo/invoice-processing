@@ -28,7 +28,6 @@ _ISO_4217 = re.compile(r"^[A-Z]{3}$")
 LIST_KEYS = (
     "invoice_keywords",
     "attachment_mime_allowlist",
-    "contractor_identifiers",
     "tig_subject_indicators",
 )
 LABEL_KEYS = (
@@ -73,7 +72,6 @@ class LabelNames:
 class Config:
     invoice_keywords: tuple[str, ...]
     attachment_mime_allowlist: tuple[str, ...]
-    contractor_identifiers: tuple[str, ...]
     tig_subject_indicators: tuple[str, ...]
     currency_map: Mapping[str, str]
     labels: LabelNames
@@ -111,7 +109,6 @@ class Config:
         return cls(
             invoice_keywords=lists["invoice_keywords"],
             attachment_mime_allowlist=lists["attachment_mime_allowlist"],
-            contractor_identifiers=lists["contractor_identifiers"],
             tig_subject_indicators=lists["tig_subject_indicators"],
             currency_map=_parse_currency_map("currency_map", raw["currency_map"]),
             labels=LabelNames(

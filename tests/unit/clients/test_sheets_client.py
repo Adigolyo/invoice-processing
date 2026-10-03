@@ -28,7 +28,6 @@ CONFIG_ROWS: list[list[Any]] = [
     ["key", "value"],
     ["invoice_keywords", "számla, invoice, Rechnung"],
     ["attachment_mime_allowlist", "application/pdf, image/jpeg, image/png"],
-    ["contractor_identifiers", "dev@contractor.example, contractor2.example"],
     ["tig_subject_indicators", "TIG, teljesítésigazolás"],
     ["currency_map", "Ft=HUF, €=EUR, $=USD"],
     ["label_processed", "Kibit/Processed"],
@@ -123,7 +122,6 @@ def test_load_config_builds_config_from_key_value_tab() -> None:
     assert isinstance(config, Config)
     assert config.invoice_keywords == ("számla", "invoice", "Rechnung")
     assert config.attachment_mime_allowlist == ("application/pdf", "image/jpeg", "image/png")
-    assert config.contractor_identifiers == ("dev@contractor.example", "contractor2.example")
     assert config.tig_subject_indicators == ("TIG", "teljesítésigazolás")
     assert dict(config.currency_map) == {"Ft": "HUF", "€": "EUR", "$": "USD"}
     assert config.labels.processed == "Kibit/Processed"
