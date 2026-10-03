@@ -12,6 +12,14 @@ from google.oauth2.credentials import Credentials
 from intake.clients import auth
 
 PROJECT = "kibit-invoice-intake"
+
+
+@pytest.fixture(autouse=True)
+def _fresh_secret_manager_client() -> None:
+    """Each test sees its own (faked) Secret Manager client, not one cached by another."""
+    auth.reset_secret_manager_client()
+
+
 REFRESH_TOKEN = "1//refresh-token-SENTINEL-value"
 CLIENT_ID = "1234-abc.apps.googleusercontent.com"
 CLIENT_SECRET = "GOCSPX-client-secret-SENTINEL"
@@ -190,3 +198,31 @@ def test_default_accessor_calls_secret_manager_client(monkeypatch: pytest.Monkey
 
     assert value == "value-from-sm"
     assert calls == [f"projects/{PROJECT}/secrets/some-secret/versions/latest"]
+
+
+def test_default_accessor_reuses_one_secret_manager_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A new gRPC client per secret per run grew staging's memory until Cloud Run killed it.
+    created: list[object] = []
+
+    class FakePayload:
+        data = b"v"
+
+    class FakeResponse:
+        payload = FakePayload()
+
+    class FakeClient:
+        def __init__(self) -> None:
+            created.append(self)
+
+        def access_secret_version(self, *, name: str) -> FakeResponse:
+            return FakeResponse()
+
+    monkeypatch.setattr(auth.secretmanager, "SecretManagerServiceClient", FakeClient)
+    auth.reset_secret_manager_client()
+
+    for secret in ("a", "b", "c", "d"):
+        auth.read_secret(PROJECT, secret)
+
+    assert len(created) == 1

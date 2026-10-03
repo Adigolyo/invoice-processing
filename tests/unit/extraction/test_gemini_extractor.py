@@ -13,6 +13,7 @@ from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from google.genai import errors, types
@@ -897,3 +898,17 @@ def test_missing_due_and_issue_date_flags_the_due_date() -> None:
 
     assert result.status is StageStatus.INCOMPLETE
     assert result.detail is not None and "due_date" in result.detail
+
+
+def test_close_releases_the_http_client() -> None:
+    client = FakeClient()
+    client.close = MagicMock()  # type: ignore[attr-defined]
+    extractor = GeminiExtractor(client, model="gemini-test")  # type: ignore[arg-type]
+
+    extractor.close()
+
+    client.close.assert_called_once_with()  # type: ignore[attr-defined]
+
+
+def test_close_tolerates_a_client_without_close() -> None:
+    GeminiExtractor(FakeClient(), model="gemini-test").close()  # type: ignore[arg-type]

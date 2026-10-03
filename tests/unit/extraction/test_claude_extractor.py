@@ -14,6 +14,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import anthropic
 import httpx2
@@ -424,3 +425,12 @@ def test_from_env_rejects_an_unknown_effort(monkeypatch: pytest.MonkeyPatch) -> 
 
     with pytest.raises(ValueError, match="AI_COMPASS_EFFORT|effort"):
         ClaudeExtractor.from_env({AI_COMPASS_API_KEY_ENV: API_KEY, AI_COMPASS_EFFORT_ENV: "turbo"})
+
+
+def test_close_releases_the_http_client() -> None:
+    extractor, client = _extractor()
+    client.close = MagicMock()  # type: ignore[attr-defined]
+
+    extractor.close()
+
+    client.close.assert_called_once_with()  # type: ignore[attr-defined]

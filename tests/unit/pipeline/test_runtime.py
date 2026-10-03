@@ -220,3 +220,84 @@ def test_candidate_scope_is_passed_to_the_gmail_client(monkeypatch: pytest.Monke
     gmail = captured.connect(make_config()).gmail
     assert isinstance(gmail, GmailClient)
     assert gmail.candidate_query.endswith(" subject:x")
+
+
+# --- releasing per-run clients (staging OOM, 2026-10-03) -------------------------------
+
+
+class ClosableExtractor(FakeExtractor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.closed = 0
+
+    def close(self) -> None:
+        self.closed += 1
+
+
+def _opening_cycle(monkeypatch: pytest.MonkeyPatch, *, fail: bool = False) -> list[PipelineClients]:
+    opened: list[PipelineClients] = []
+
+    def fake_cycle(sheets: Any, connect: Callable[[Config], PipelineClients]) -> RunSummary:
+        opened.append(connect(make_config()))
+        if fail:
+            raise RuntimeError("boom")
+        return RunSummary(())
+
+    monkeypatch.setattr(runtime, "run_cycle", fake_cycle)
+    return opened
+
+
+def _closing_builder() -> tuple[list[Any], Callable[[str, str, Any], Any]]:
+    services: list[Any] = []
+    _, build = _builder()
+
+    def tracked(api: str, version: str, credentials: Any) -> Any:
+        service = build(api, version, credentials)
+        services.append(service)
+        return service
+
+    return services, tracked
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_every_client_a_run_opens_is_closed_when_it_ends(
+    monkeypatch: pytest.MonkeyPatch, fail: bool
+) -> None:
+    _opening_cycle(monkeypatch, fail=fail)
+    services, build = _closing_builder()
+    extractor = ClosableExtractor()
+    collected: list[int] = []
+    monkeypatch.setattr(runtime.gc, "collect", lambda: collected.append(1) or 0)
+
+    if fail:
+        with pytest.raises(RuntimeError, match="boom"):
+            runtime.run_with_credentials(
+                object(), ENV, service_builder=build, extractor_factory=lambda e, c: extractor
+            )
+    else:
+        runtime.run_with_credentials(
+            object(), ENV, service_builder=build, extractor_factory=lambda e, c: extractor
+        )
+
+    assert len(services) == 3
+    for service in services:
+        service.close.assert_called_once_with()
+    assert extractor.closed == 1
+    assert collected == [1]
+
+
+def test_a_failing_close_does_not_hide_the_run_result(monkeypatch: pytest.MonkeyPatch) -> None:
+    _opening_cycle(monkeypatch)
+    services, build = _closing_builder()
+
+    def build_broken(api: str, version: str, credentials: Any) -> Any:
+        service = build(api, version, credentials)
+        service.close.side_effect = OSError("socket already gone")
+        return service
+
+    summary = runtime.run_with_credentials(
+        object(), ENV, service_builder=build_broken, extractor_factory=lambda e, c: FakeExtractor()
+    )
+
+    assert summary.to_dict()["processed"] == 0
+    assert all(s.close.called for s in services)
