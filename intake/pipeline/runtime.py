@@ -74,9 +74,16 @@ def run_with_credentials(
                 f"{DRIVE_ROOT_FOLDER_ID_ENV} does not match the Config tab's "
                 "drive_root_folder_id; refusing to file into an unexpected folder"
             )
+        gmail = GmailClient(service_builder("gmail", "v1", credentials), config.labels)
+        drive = DriveClient(service_builder("drive", "v3", credentials), root)
+        # Drive keeps a trashed file working by ID, so a ledger or root folder deleted
+        # by mistake would otherwise keep being written to, out of sight, until the trash
+        # is emptied. Refuse instead: the run fails before any email is touched.
+        drive.ensure_not_trashed(spreadsheet_id, "ledger spreadsheet")
+        drive.ensure_not_trashed(root, "Drive root folder")
         return PipelineClients(
-            gmail=GmailClient(service_builder("gmail", "v1", credentials), config.labels),
-            drive=DriveClient(service_builder("drive", "v3", credentials), root),
+            gmail=gmail,
+            drive=drive,
             extractor=extractor_factory(env, config),
         )
 

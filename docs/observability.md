@@ -158,6 +158,10 @@ not from a developer machine). Use the sandbox mailbox only.
    force-run. Expect: HTTP 500 on `/run`, an `event=run_failed` ERROR entry with
    `error_type=LedgerHeaderError`, an Error Reporting event, the "run failed" email. No
    email is touched. Restore the header.
+   The same alert fires when the ledger spreadsheet or the Drive root folder is in the
+   Drive trash (`error_type=DriveTrashedError`): Drive keeps trashed files working by ID,
+   so the service refuses to run rather than keep writing into the trash. Restore the
+   file (Drive -> Trash -> Restore).
 4. **Missed runs.** Pause the staging scheduler job for longer than
    `alert_no_successful_run_minutes` (or temporarily lower it to 10 and `terraform apply`).
    Expect the "no successful run" email. Resume the job; the incident closes after the

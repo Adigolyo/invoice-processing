@@ -40,7 +40,10 @@ def _builder() -> tuple[list[tuple[str, str]], Callable[[str, str, Any], Any]]:
 
     def build(api: str, version: str, credentials: Any) -> Any:
         built.append((api, version))
-        return MagicMock(name=api)
+        service = MagicMock(name=api)
+        # The ledger / root trash safeguard reads files().get(); both are live here.
+        service.files.return_value.get.return_value.execute.return_value = {"trashed": False}
+        return service
 
     return built, build
 

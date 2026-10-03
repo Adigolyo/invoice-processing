@@ -52,6 +52,10 @@ _FINGERPRINT_LIST_FIELDS = "nextPageToken, files(id, name, mimeType, parents, ap
 _PAGE_SIZE = 1000
 
 
+class DriveTrashedError(RuntimeError):
+    """A file the pipeline depends on (ledger, root folder) is in the Drive trash."""
+
+
 class DriveResponseError(RuntimeError):
     """The Drive API answered, but not with the shape this client relies on."""
 
@@ -157,6 +161,20 @@ class DriveClient:
             raise ValueError("root_folder_id is required")
         self._service = service
         self._root = root_folder_id.strip()
+
+    def ensure_not_trashed(self, file_id: str, what: str) -> None:
+        """Raise ``DriveTrashedError`` if ``file_id`` is in the trash.
+
+        API errors (e.g. 404 for a permanently deleted file) propagate unchanged.
+        """
+        response = _execute(
+            self._service.files().get(fileId=file_id, fields="trashed", supportsAllDrives=True)
+        )
+        if response.get("trashed") is True:
+            raise DriveTrashedError(
+                f"the {what} is in the Drive trash; restore it (Drive -> Trash -> Restore) "
+                "or point the configuration at a live one"
+            )
 
     def find_month_folder(self, yymm: str) -> str | None:
         """ID of the ``YYMM`` folder under the root, or None if it does not exist."""
@@ -351,6 +369,7 @@ __all__ = [
     "DriveClient",
     "DriveConflictError",
     "DriveResponseError",
+    "DriveTrashedError",
     "FiledByAttachment",
     "FiledFileRef",
     "SavedFile",
