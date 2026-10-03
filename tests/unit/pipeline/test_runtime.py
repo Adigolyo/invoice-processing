@@ -203,3 +203,20 @@ def test_live_ledger_and_root_pass_the_safeguard(monkeypatch: pytest.MonkeyPatch
     assert captured.connect is not None
     clients = captured.connect(make_config(drive_root_folder_id="root-folder-id"))
     assert isinstance(clients.drive, DriveClient)
+
+
+def test_candidate_scope_is_passed_to_the_gmail_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = _capture(monkeypatch)
+    _, build = _builder()
+    runtime.run_with_credentials(
+        object(),
+        ENV,
+        service_builder=build,
+        extractor_factory=lambda e, c: FakeExtractor(),
+        candidate_scope="subject:x",
+    )
+
+    assert captured.connect is not None
+    gmail = captured.connect(make_config()).gmail
+    assert isinstance(gmail, GmailClient)
+    assert gmail.candidate_query.endswith(" subject:x")

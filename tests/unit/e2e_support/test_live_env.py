@@ -152,3 +152,11 @@ def test_cleanup_only_after_a_fully_passed_run(
     else:
         monkeypatch.setenv("KIBIT_E2E_KEEP", keep)
     assert workspace.should_clean_up(tests_failed=failed) is expected
+
+
+def test_candidate_scope_matches_only_this_runs_seeded_mail() -> None:
+    from tests.e2e.fixture_set.verify import run_marker
+
+    scope = workspace.candidate_scope("20261003-011922")
+    assert scope == 'subject:"Kibit E2E 20261003-011922"'
+    assert scope.split(":", 1)[1].strip('"') in run_marker("20261003-011922")

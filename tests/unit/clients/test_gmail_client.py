@@ -697,3 +697,16 @@ def test_create_draft_reply_raises_when_response_has_no_draft_id() -> None:
 
 def test_module_exports() -> None:
     assert "GmailClient" in gmail_client.__all__
+
+
+def test_candidate_query_can_be_narrowed_to_a_scope() -> None:
+    # The E2E suite only processes its own seeded mail, never someone's manual test.
+    query = build_candidate_query(LABELS, scope='subject:"Kibit E2E 20261003-011922"')
+    assert query.startswith("in:inbox is:unread ")
+    assert query.endswith(' subject:"Kibit E2E 20261003-011922"')
+
+
+def test_client_lists_candidates_with_its_scope() -> None:
+    fake = FakeGmail()
+    GmailClient(fake.service, LABELS, candidate_scope="subject:x").list_candidates()
+    assert fake.users.messages.return_value.list.call_args.kwargs["q"].endswith(" subject:x")
