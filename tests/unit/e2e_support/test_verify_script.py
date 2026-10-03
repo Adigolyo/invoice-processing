@@ -94,3 +94,21 @@ def test_require_run_passes_a_complete_correct_run(tmp_path: Path) -> None:
     second["summary"] = {"candidates": []}
     path = _results(tmp_path, first, second)
     assert script.main(["--strict", "--require-run", "--results", str(path)]) == 0
+
+
+
+def test_results_of_a_subset_run_are_judged_on_the_seeded_pairs_only(tmp_path: Path) -> None:
+    from tests.e2e.fixture_set import verify
+    from tests.unit.e2e_support.test_verify import PAIRS
+
+    smoke = verify.select_pairs(PAIRS, "smoke")
+    first = perfect_snapshot(smoke)
+    second = copy.deepcopy(first)
+    second["summary"] = {"candidates": []}
+    path = tmp_path / "smoke.json"
+    path.write_text(
+        json.dumps({"run1": first, "run2": second, "seeded": {p.pair: {} for p in smoke}}),
+        encoding="utf-8",
+    )
+
+    assert script.main(["--strict", "--require-run", "--results", str(path)]) == 0

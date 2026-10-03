@@ -59,14 +59,14 @@ def _draft_body(pair: PairExpectation) -> str:
     return "Tisztelt Partnerünk!\n\n" + "\n".join(lines) + "\n\nÜdvözlettel:\n"
 
 
-def perfect_snapshot() -> dict[str, Any]:
+def perfect_snapshot(pairs: list[PairExpectation] | None = None) -> dict[str, Any]:
     """The Workspace state a fully correct first run leaves behind."""
     seq: dict[str, int] = {}
     ledger: list[list[Any]] = []
     drive: dict[str, list[str]] = {}
     messages: dict[str, Any] = {}
     candidates: list[dict[str, Any]] = []
-    for i, p in enumerate(PAIRS):
+    for i, p in enumerate(PAIRS if pairs is None else pairs):
         seq[p.yymm] = seq.get(p.yymm, 0) + 1
         registry = f"{p.yymm}_{seq[p.yymm]:03d}_{p.supplier8}"
         net: Any = int(p.net) if p.net == p.net.to_integral_value() else float(p.net)
@@ -460,3 +460,37 @@ def test_draft_check_accepts_the_production_wording() -> None:
     )
     assert draft_problems(body, pair) == []
     assert draft_problems(body.replace("989,00", "988,00"), pair) != []
+
+
+# --- pair selection (release gate smoke subset) ------------------------------------------
+
+
+def test_all_selection_keeps_every_pair_in_order() -> None:
+    assert verify.select_pairs(PAIRS, "all") == PAIRS
+
+
+def test_smoke_selection_covers_every_outcome_currency_and_month() -> None:
+    smoke = verify.select_pairs(PAIRS, "smoke")
+    combos = {(p.outcome, p.currency, p.yymm) for p in PAIRS}
+
+    assert {(p.outcome, p.currency, p.yymm) for p in smoke} == combos
+    assert len(smoke) == len(combos) < len(PAIRS)
+    # Mismatches with one and with two discrepancies are both exercised.
+    assert {len(p.discrepancies) for p in smoke if p.outcome == "mismatch"} == {1, 2}
+    # Deterministic, in answer-key order.
+    assert smoke == verify.select_pairs(PAIRS, "smoke")
+    assert [PAIRS.index(p) for p in smoke] == sorted(PAIRS.index(p) for p in smoke)
+
+
+def test_smoke_subset_passes_its_own_checks() -> None:
+    smoke = verify.select_pairs(PAIRS, "smoke")
+    snapshot = perfect_snapshot(smoke)
+
+    assert all(v.passed for v in evaluate_pairs(smoke, snapshot))
+    assert global_problems(smoke, snapshot) == []
+
+
+@pytest.mark.parametrize("selection", ["", "some", "0"])
+def test_unknown_selection_is_refused(selection: str) -> None:
+    with pytest.raises(ValueError):
+        verify.select_pairs(PAIRS, selection)

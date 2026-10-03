@@ -55,3 +55,64 @@ def test_unavailable_fails_when_the_suite_is_required(monkeypatch: pytest.Monkey
     monkeypatch.setenv("KIBIT_E2E_REQUIRED", "1")
     with pytest.raises(pytest.fail.Exception, match="no credentials"):
         workspace.unavailable("no credentials")
+
+
+
+# --- Gmail rate-limit retry around a pipeline run ----------------------------------------
+
+
+def _http_error(status: int, reason: str = "") -> Exception:
+    import httplib2
+    from googleapiclient.errors import HttpError
+
+    body = f'{{"error": {{"errors": [{{"reason": "{reason}"}}]}}}}'.encode()
+    return HttpError(httplib2.Response({"status": status}), body)
+
+
+def test_a_rate_limited_run_is_retried_after_a_wait() -> None:
+    attempts: list[int] = []
+    waits: list[float] = []
+
+    def run() -> str:
+        attempts.append(1)
+        if len(attempts) < 3:
+            raise _http_error(429)
+        return "summary"
+
+    result = workspace.retry_rate_limited(run, attempts=4, wait_s=30, sleep=waits.append)
+
+    assert result == "summary"
+    assert len(attempts) == 3
+    assert waits == [30, 30]
+
+
+def test_403_rate_limit_exceeded_is_retried_too() -> None:
+    calls: list[int] = []
+
+    def run() -> str:
+        calls.append(1)
+        if len(calls) == 1:
+            raise _http_error(403, "rateLimitExceeded")
+        return "ok"
+
+    assert workspace.retry_rate_limited(run, attempts=2, wait_s=1, sleep=lambda s: None) == "ok"
+
+
+def test_rate_limit_retries_are_bounded() -> None:
+    def run() -> str:
+        raise _http_error(429)
+
+    with pytest.raises(Exception, match="429"):
+        workspace.retry_rate_limited(run, attempts=2, wait_s=1, sleep=lambda s: None)
+
+
+def test_other_errors_are_not_retried() -> None:
+    calls: list[int] = []
+
+    def run() -> str:
+        calls.append(1)
+        raise _http_error(403, "forbidden")
+
+    with pytest.raises(Exception):
+        workspace.retry_rate_limited(run, attempts=3, wait_s=1, sleep=lambda s: None)
+    assert len(calls) == 1
