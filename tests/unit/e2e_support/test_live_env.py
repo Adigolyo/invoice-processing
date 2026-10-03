@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -115,3 +116,39 @@ def test_other_errors_are_not_retried() -> None:
     with pytest.raises(Exception, match="403"):
         workspace.retry_rate_limited(run, attempts=3, wait_s=1, sleep=lambda s: None)
     assert len(calls) == 1
+
+
+# --- cleanup of a passed run's ledger and folder ----------------------------------------
+
+
+def _services() -> tuple[Any, Any]:
+    from unittest.mock import MagicMock
+
+    drive = MagicMock()
+    return workspace.Services(gmail=MagicMock(), drive=drive, sheets=MagicMock()), drive
+
+
+def test_trash_run_artifacts_moves_ledger_and_folder_to_the_trash() -> None:
+    services, drive = _services()
+
+    workspace.trash_run_artifacts(services, spreadsheet_id="sheet-1", folder_id="folder-1")
+
+    calls = [c.kwargs for c in drive.files.return_value.update.call_args_list]
+    assert calls == [
+        {"fileId": "sheet-1", "body": {"trashed": True}, "supportsAllDrives": True},
+        {"fileId": "folder-1", "body": {"trashed": True}, "supportsAllDrives": True},
+    ]
+
+
+@pytest.mark.parametrize(
+    ("failed", "keep", "expected"),
+    [(0, None, True), (1, None, False), (0, "1", False), (2, "1", False)],
+)
+def test_cleanup_only_after_a_fully_passed_run(
+    monkeypatch: pytest.MonkeyPatch, failed: int, keep: str | None, expected: bool
+) -> None:
+    if keep is None:
+        monkeypatch.delenv("KIBIT_E2E_KEEP", raising=False)
+    else:
+        monkeypatch.setenv("KIBIT_E2E_KEEP", keep)
+    assert workspace.should_clean_up(tests_failed=failed) is expected
