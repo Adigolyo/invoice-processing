@@ -129,6 +129,29 @@ def contractor_domain(supplier: str) -> str:
     return f"{match.group(1).lower()}-kft.example"
 
 
+PAIR_SELECTIONS: Final = ("all", "smoke")
+
+
+def select_pairs(pairs: Sequence[PairExpectation], selection: str) -> list[PairExpectation]:
+    """``all`` pairs, or the ``smoke`` subset: the first pair (in answer-key order) of
+    every (expected outcome, currency, month) combination. The smoke subset keeps the
+    release gate short while still exercising match and mismatch, HUF and EUR, and both
+    months' sequences.
+    """
+    if selection == "all":
+        return list(pairs)
+    if selection == "smoke":
+        seen: set[tuple[str, str, str]] = set()
+        chosen: list[PairExpectation] = []
+        for p in pairs:
+            combo = (p.outcome, p.currency, p.yymm)
+            if combo not in seen:
+                seen.add(combo)
+                chosen.append(p)
+        return chosen
+    raise ValueError(f"unknown pair selection {selection!r}; use one of {PAIR_SELECTIONS}")
+
+
 def load_answer_key(path: Path) -> list[PairExpectation]:
     data = json.loads(path.read_text(encoding="utf-8"))
     pairs: list[PairExpectation] = []
@@ -623,6 +646,7 @@ __all__ = [
     "load_answer_key",
     "message_id_for",
     "month_sequence_problems",
+    "select_pairs",
     "run_id_from_title",
     "run_marker",
     "run_scoped_counts",

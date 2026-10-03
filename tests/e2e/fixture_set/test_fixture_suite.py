@@ -1,4 +1,5 @@
-"""Task 24 release gate: the 32 TIG/invoice fixture pairs through the live pipeline, twice.
+"""Task 24 release gate: the TIG/invoice fixture pairs (all 32, or the smoke subset)
+through the live pipeline, twice.
 
 Covers the technical design's E2E 2 (clean contractor invoice + matching TIG ->
 Processed, no draft), E2E 3 (TIG mismatch -> filed, booked, one draft, Pending) and

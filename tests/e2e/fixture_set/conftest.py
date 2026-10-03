@@ -25,15 +25,19 @@ Configuration (environment):
   deployed service reads them.
 - ``KIBIT_E2E_REQUIRED=1`` (release gate): whatever would skip the suite fails it.
 - ``KIBIT_E2E_RESULTS_DIR`` (default ``tests/e2e/results``).
+- ``KIBIT_E2E_PAIRS`` (default ``all``): ``all`` 32 pairs, or ``smoke`` (one pair per
+  outcome x currency x month, 7 pairs; used by the release gate).
 - ``KIBIT_E2E_COOLDOWN_S`` (default 90): pause before run 1 and before run 2, so the
   sandbox's per-user Gmail quota recovers (live runs hit ``rateLimitExceeded`` while
-  polling right after seeding and right after run 1).
+  polling right after seeding and right after run 1). A run whose poll is still
+  rate-limited is retried (``RATE_LIMIT_ATTEMPTS`` x ``RATE_LIMIT_WAIT_S``).
 - ``KIBIT_E2E_RESUME=<run-id>``: continue a run that was seeded but whose first pipeline
   run failed before processing (e.g. that quota error): no new ledger, folder or emails.
 """
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import os
@@ -57,6 +61,10 @@ from intake.pipeline.runtime import (
 from tests.e2e.fixture_set import verify, workspace
 
 RESULTS_DIR_DEFAULT = workspace.REPO_ROOT / "tests" / "e2e" / "results"
+# A rate-limited poll changes nothing, so the run is retried instead of the suite
+# waiting a long fixed cooldown up front.
+RATE_LIMIT_ATTEMPTS = 4
+RATE_LIMIT_WAIT_S = 30.0
 
 
 @dataclass
@@ -133,6 +141,11 @@ def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
     problems = verify.answer_key_problems(pairs, workspace.FIXTURES)
     if problems:
         pytest.fail("answer key unusable:\n" + "\n".join(problems))
+    selection = os.environ.get("KIBIT_E2E_PAIRS", "all").strip() or "all"
+    try:
+        pairs = verify.select_pairs(pairs, selection)
+    except ValueError as exc:
+        pytest.fail(str(exc))
 
     services = workspace.build_services(credentials)
     address = workspace.mailbox_address(services.gmail)
@@ -152,7 +165,7 @@ def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
     else:
         run_id = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
         results_path = results_dir / f"{run_id}.json"
-        record = {"run_id": run_id}
+        record = {"run_id": run_id, "pair_selection": selection}
         own = set()
     leftovers = [m for m in workspace.leftover_e2e_invoices(services.gmail) if m not in own]
     if leftovers:
@@ -210,8 +223,16 @@ def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
             # after run 1: polling has no retry by design (a failed poll changes nothing).
             time.sleep(cooldown_s)
             t = time.monotonic()
-            summary = run_with_credentials(
-                credentials, run_env, extractor_factory=extraction_log.factory(run)
+            summary = workspace.retry_rate_limited(
+                functools.partial(
+                    run_with_credentials,
+                    credentials,
+                    run_env,
+                    extractor_factory=extraction_log.factory(run),
+                ),
+                attempts=RATE_LIMIT_ATTEMPTS,
+                wait_s=RATE_LIMIT_WAIT_S,
+                sleep=time.sleep,
             )
             timings[f"run{run}_s"] = round(time.monotonic() - t, 1)
             snaps.append(

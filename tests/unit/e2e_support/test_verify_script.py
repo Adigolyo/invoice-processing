@@ -96,7 +96,6 @@ def test_require_run_passes_a_complete_correct_run(tmp_path: Path) -> None:
     assert script.main(["--strict", "--require-run", "--results", str(path)]) == 0
 
 
-
 def test_results_of_a_subset_run_are_judged_on_the_seeded_pairs_only(tmp_path: Path) -> None:
     from tests.e2e.fixture_set import verify
     from tests.unit.e2e_support.test_verify import PAIRS

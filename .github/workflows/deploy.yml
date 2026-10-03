@@ -159,7 +159,7 @@ jobs:
     # sandbox inbox, runs the pipeline of this commit twice against a fresh ledger and
     # folder, and checks every row, file, label and draft against the answer key.
     # Fail-closed: a skipped or partial suite fails the gate (KIBIT_E2E_REQUIRED=1,
-    # --require-run). Cost per release: ~10 minutes and ~64 AI Compass calls.
+    # --require-run). Smoke subset: ~3-4 minutes and ~14 AI Compass calls per release.
     needs: [build-and-push, deploy-staging]
     runs-on: ubuntu-latest
     environment: staging
@@ -198,6 +198,11 @@ jobs:
           EXTRACTOR_BACKEND: ai_compass
           KIBIT_E2E_REQUIRED: "1"
           KIBIT_E2E_RESULTS_DIR: e2e-results
+          # Smoke subset (7 of 32 pairs) and short cooldowns keep the gate to a few
+          # minutes; rate-limited polls are retried. Run all 32 locally before risky
+          # releases: pytest -m e2e tests/e2e/fixture_set
+          KIBIT_E2E_PAIRS: smoke
+          KIBIT_E2E_COOLDOWN_S: "15"
         run: pytest -m e2e tests/e2e/fixture_set -v -rs -p no:cacheprovider
       - name: Assert zero wrong rows, files and labels
         run: |

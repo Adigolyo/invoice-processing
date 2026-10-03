@@ -57,7 +57,6 @@ def test_unavailable_fails_when_the_suite_is_required(monkeypatch: pytest.Monkey
         workspace.unavailable("no credentials")
 
 
-
 # --- Gmail rate-limit retry around a pipeline run ----------------------------------------
 
 
@@ -113,6 +112,6 @@ def test_other_errors_are_not_retried() -> None:
         calls.append(1)
         raise _http_error(403, "forbidden")
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="403"):
         workspace.retry_rate_limited(run, attempts=3, wait_s=1, sleep=lambda s: None)
     assert len(calls) == 1

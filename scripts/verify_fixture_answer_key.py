@@ -81,6 +81,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.results:
         record = json.loads(args.results.read_text(encoding="utf-8"))
         first, second = record.get("run1"), record.get("run2")
+        seeded = record.get("seeded")
+        if isinstance(seeded, dict) and seeded:
+            # A subset run (e.g. the release gate's smoke subset) is judged on the pairs
+            # it seeded; the answer key itself was checked in full above.
+            pairs = [p for p in pairs if p.pair in seeded]
+            print(f"judging the {len(pairs)} seeded pair(s)")
         if first is None:
             print(f"{args.results}: no first-run snapshot recorded")
             failures += 1

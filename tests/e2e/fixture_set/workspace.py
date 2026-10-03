@@ -14,7 +14,7 @@ import logging
 import os
 import sys
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 import pytest
+from googleapiclient.errors import HttpError
 
 from intake.__main__ import TOKEN_FILE
 from intake.clients.auth import ENVIRONMENT_ENV, PROJECT_ID_ENV
@@ -63,6 +64,33 @@ def unavailable(reason: str) -> NoReturn:
     if os.environ.get(REQUIRED_ENV) == "1":
         pytest.fail(f"E2E suite required but unavailable: {reason}")
     pytest.skip(reason)
+
+
+def _is_rate_limited(exc: BaseException) -> bool:
+    if not isinstance(exc, HttpError):
+        return False
+    status = int(getattr(exc.resp, "status", 0))
+    if status == 429:
+        return True
+    return status == 403 and "rateLimitExceeded" in str(exc.content or b"", "utf-8", "replace")
+
+
+def retry_rate_limited[T](
+    run: Callable[[], T], *, attempts: int, wait_s: float, sleep: Callable[[float], None]
+) -> T:
+    """Call ``run``; on a Gmail rate-limit error wait ``wait_s`` and try again.
+
+    Safe for a pipeline run: a rate-limited poll fails before any candidate is touched
+    (polling errors propagate; per-candidate errors are caught inside the run).
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            return run()
+        except Exception as exc:
+            if attempt == attempts or not _is_rate_limited(exc):
+                raise
+            sleep(wait_s)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def credential_source(env: Mapping[str, str], secrets_dir: Path) -> str | None:

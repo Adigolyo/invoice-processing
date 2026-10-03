@@ -271,14 +271,15 @@ with *Run workflow*:
 3. **release-gate**, as `kibit-ci-e2e`, fail-closed:
    - pauses `kibit-intake-poll-staging` (custom role `kibitSchedulerPauser`), so the
      staging service doesn't book the seeded emails into the demo ledger;
-   - `pytest -m e2e tests/e2e/fixture_set` with `KIBIT_E2E_REQUIRED=1`: the 32 pairs,
+   - `pytest -m e2e tests/e2e/fixture_set` with `KIBIT_E2E_REQUIRED=1` and
+     `KIBIT_E2E_PAIRS=smoke`: 7 of the 32 pairs (one per outcome x currency x month),
      run twice against a fresh ledger and folder. The sandbox OAuth credentials and the
      AI Compass key come from the staging secrets, which that SA can read. Anything that
      would skip the suite fails it;
    - `scripts/verify_fixture_answer_key.py --strict --require-run` on the run's results;
    - resumes the staging job if it was enabled before.
 
-   Each release costs about 10 minutes and ~64 AI Compass calls, and leaves an
+   Each release costs a few minutes and ~14 AI Compass calls, and leaves an
    "Kibit E2E ledger <run-id>" sheet and "Invoices E2E <run-id>" folder in the sandbox
    Drive.
 4. **deploy-production**: waits for approval on the `production` Environment, then
