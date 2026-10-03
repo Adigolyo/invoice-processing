@@ -80,6 +80,11 @@ Columns after H are not checked.
 file is named the same, plus its extension. Numbers filed before 2026-10-03 have no
 underscores (`2611015JKFT`); they still count when the next sequence number is chosen.
 
+The next sequence number for a month is one above the highest already used in **either**
+the month's Drive folder **or** the ledger's `INV_ID_int` column. A number never comes
+back, even if its PDF is deleted from Drive or its ledger row is deleted (as long as the
+other one remains). Delete both to free a number.
+
 Rows are written with `valueInputOption=RAW`. Text such as external invoice IDs keeps any
 leading zeros. Net and Gross are written as numbers, and the due date as the text
 `YYYY.MM.DD`.
