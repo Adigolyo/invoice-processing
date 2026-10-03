@@ -48,7 +48,7 @@ code: edit the tab, and the next run picks the change up.
 | `label_processed` | text | Gmail label for a filed and booked invoice with no open issue. |
 | `label_pending` | text | Gmail label for a filed and booked invoice with an open TIG mismatch. |
 | `label_needs_review` | text | Gmail label for an ambiguous or incomplete invoice. The service never looks at it again. |
-| `label_awaiting_tig` | text | Gmail label for a contractor invoice with no TIG yet. It's re-checked every run. |
+| `label_awaiting_tig` | text | Legacy label. No longer applied: a contractor invoice with no TIG in its thread is processed. Threads that still carry it are re-checked and the label is replaced. |
 | `sequence_start` | integer ≥ 0 | First sequence number in a new month folder (USR-003-02). |
 | `sequence_width` | integer ≥ 1 | Zero-padded width of the sequence part of the registry number. `sequence_start` must fit in it. |
 | `rounding_tolerance` | decimal ≥ 0 | Largest invoice-vs-TIG total-net difference that still counts as a match (USR-005-01). |

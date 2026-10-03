@@ -11,16 +11,20 @@ TIG-route input                        ``Outcome``     file & book?   re-evaluat
 =====================================  ==============  =============  ===============
 TIG ``FOUND`` + comparison MATCH       PROCESSED       yes            no
 TIG ``FOUND`` + comparison MISMATCH    PENDING         yes            no
-TIG ``MISSING``                        AWAITING_TIG    no             yes, every run
+TIG ``MISSING``                        PROCESSED       yes            no
 TIG ``UNREADABLE`` / ``AMBIGUOUS``     NEEDS_REVIEW    no             no
 =====================================  ==============  =============  ===============
 
 - A mismatch never skips filing or booking (USR-005-03 AC1); it only changes the final
   label from processed to pending (AC2).
-- A *missing* TIG means nothing to compare against, so nothing is filed or booked
-  (USR-005-04 AC1). A TIG that exists but cannot be used (unreadable, or several
-  candidates) is not "missing": waiting would never resolve it, so it needs a human,
-  consistent with ``TigLookup.flag_reason`` (``INCOMPLETE_DATA``).
+- A *missing* TIG means the invoice did not come in as a reply to a TIG. A TIG is
+  always sent out first and the invoice is the reply, so there is nothing to reconcile:
+  the invoice is filed, booked and processed like a direct one (project owner decision,
+  2026-10-03; replaces USR-005-04's AwaitingTIG). A TIG that exists but cannot be used
+  (unreadable, or several candidates) is not "missing": it needs a human, consistent
+  with ``TigLookup.flag_reason`` (``INCOMPLETE_DATA``).
+- ``AWAITING_TIG`` is no longer produced. Threads labelled AwaitingTIG by the old rule
+  are still re-evaluated, and their label is replaced once they are processed.
 - Only the TIG route is reconciled. ``tig_outcome`` refuses any other route with
   ``NotTigRouteError``; ``missing_tig_outcome`` answers ``False`` for them without looking
   at the lookup (USR-005-04 AC6).
@@ -90,7 +94,7 @@ def tig_outcome(
     if comparison is not None:
         return Outcome.PENDING if pending_outcome(comparison) else Outcome.PROCESSED
     if lookup.status is TigLookupStatus.MISSING:
-        return Outcome.AWAITING_TIG
+        return Outcome.PROCESSED
     return Outcome.NEEDS_REVIEW
 
 
