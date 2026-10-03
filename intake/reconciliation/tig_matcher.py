@@ -72,7 +72,12 @@ from enum import StrEnum
 from pathlib import PurePosixPath
 from typing import Final, Protocol
 
-from intake.clients.gmail_client import AttachmentContent, Thread, ThreadMessage
+from intake.clients.gmail_client import (
+    DRAFT_LABEL_ID,
+    AttachmentContent,
+    Thread,
+    ThreadMessage,
+)
 from intake.config import Config
 from intake.extraction import SUPPORTED_MIME_TYPES, DocumentKind, Extractor
 from intake.extraction.gemini_extractor import UnsupportedDocumentError
@@ -238,6 +243,23 @@ def _earlier_messages(thread: Thread, invoice_message_id: str) -> list[ThreadMes
                 m for m in thread.messages[:position] if m.internal_date <= message.internal_date
             ]
     raise ValueError(f"message {invoice_message_id} is not in thread {thread.thread_id}")
+
+
+def has_earlier_tig_attachment(thread: Thread, invoice_message_id: str) -> bool:
+    """True when a message before the invoice in its thread carries a TIG-named file.
+
+    The TIG flow is: a TIG goes out first and the invoice comes back as a reply (project
+    owner, 2026-10-03). This is the thread signal that puts a reply into the TIG route
+    whoever sent it; drafts (this service's own replies) never count. Only the filename
+    rule is used here, not the weaker subject-indicator fallback, so a supplier's invoice
+    titled "TIG ..." is not pulled into the TIG flow.
+    """
+    return any(
+        is_tig_filename(attachment.filename)
+        for message in _earlier_messages(thread, invoice_message_id)
+        if DRAFT_LABEL_ID not in message.label_names
+        for attachment in message.attachments
+    )
 
 
 def _base_mime(mime_type: str) -> str:
@@ -455,5 +477,6 @@ __all__ = [
     "TigLookupStatus",
     "compare",
     "find_tig",
+    "has_earlier_tig_attachment",
     "is_tig_filename",
 ]

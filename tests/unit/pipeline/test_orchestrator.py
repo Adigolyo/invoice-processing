@@ -129,7 +129,6 @@ def _nothing_filed_or_booked(h: Harness) -> None:
 def test_direct_invoice_is_filed_booked_marked_read_and_labelled_processed() -> None:
     h = Harness()
     h.direct_invoice()
-    h.gmail.fail["get_thread"] = AssertionError("direct route must not look for a TIG")
 
     summary = h.run()
 

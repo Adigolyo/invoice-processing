@@ -18,7 +18,9 @@ Per candidate (``Orchestrator.process``), in order:
    (``needs_evaluation``); AwaitingTIG is re-evaluated. A message whose only invoice-type
    attachments are TIG documents (e.g. the project manager's certificate email) is not
    an invoice and is skipped without any change.
-2. **Route** (``classify``). AMBIGUOUS -> NeedsReview.
+2. **Route** (``classify``). AMBIGUOUS -> NeedsReview. A DIRECT invoice whose thread has
+   a TIG-named attachment earlier on is a reply to a TIG: it takes the TIG route
+   (``has_earlier_tig_attachment``), whoever sent it.
 3. **Attachments.** Downloaded; kept when the MIME type is on
    ``Config.attachment_mime_allowlist`` and the filename does not name a TIG.
    Byte-identical copies count once. None left, or more than one distinct invoice ->
@@ -107,7 +109,13 @@ from intake.observability.logging import run_scope
 from intake.pipeline.labels import plan_labels, validate_label_names
 from intake.reconciliation.draft_reply import draft_reply_on_mismatch
 from intake.reconciliation.outcome_rules import Outcome, needs_evaluation, tig_outcome
-from intake.reconciliation.tig_matcher import TigLookup, compare, find_tig, is_tig_filename
+from intake.reconciliation.tig_matcher import (
+    TigLookup,
+    compare,
+    find_tig,
+    has_earlier_tig_attachment,
+    is_tig_filename,
+)
 from intake.registry.filing import (
     FilingConflictError,
     FilingError,
@@ -408,7 +416,14 @@ class Orchestrator:
             decision = classify(candidate.sender, candidate.subject, self._config)
             if decision.is_ambiguous:
                 raise _Stop(Outcome.NEEDS_REVIEW, "ambiguous_route")
-        route = decision.route
+            route = decision.route
+            # A reply to a TIG (a TIG-named file earlier in the thread) is the TIG flow,
+            # whoever sends the invoice back: the sender list alone misses replies from
+            # addresses not configured as contractors.
+            if route is Route.DIRECT and has_earlier_tig_attachment(
+                self._gmail.get_thread(candidate.thread_id), message_id
+            ):
+                route = Route.TIG
 
         with self._stage("attachments", message_id):
             invoice = self._invoice_attachment(message_id)
