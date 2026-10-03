@@ -5,7 +5,10 @@ name: Deploy
 #     -> build & push the image once (tagged with the commit SHA, deployed by digest)
 #     -> deploy staging (sandbox Workspace account), authenticated smoke test
 #     -> release gate: fixture-set E2E against the sandbox account (Task 24), fail-closed
-#     -> deploy production: the same digest, after approval on the "production" Environment
+#     -> deploy production: the same digest, after approval on the "production" Environment.
+#        Switched off for now: runs only when the repository variable
+#        ENABLE_PRODUCTION_DEPLOY is "true". A skipped job never asks for approval, so a
+#        push deploys to staging with no interaction.
 #
 # Deploys are `gcloud run services update --image`, not `terraform apply -target`:
 # Terraform owns everything else and ignores the image (infra/cloudrun.tf), so CI needs no
@@ -14,7 +17,8 @@ name: Deploy
 # Repository variables (Settings -> Secrets and variables -> Actions -> Variables):
 #   GCP_PROJECT_ID, WIF_PROVIDER, CI_DEPLOYER_SA_EMAIL, CI_E2E_SA_EMAIL
 # "staging" Environment variables: LEDGER_SPREADSHEET_ID, DRIVE_ROOT_FOLDER_ID (sandbox)
-# "production" Environment: required reviewers (the pipeline's only manual gate).
+# "production" Environment: required reviewers (the pipeline's only manual gate, used only
+# when ENABLE_PRODUCTION_DEPLOY is "true").
 
 on:
   workflow_run:
@@ -218,6 +222,8 @@ jobs:
         run: gcloud scheduler jobs resume "$STAGING_JOB" --location="$GCP_REGION" --project="$GCP_PROJECT_ID"
 
   deploy-production:
+    # Off until ENABLE_PRODUCTION_DEPLOY=true is set as a repository variable.
+    if: vars.ENABLE_PRODUCTION_DEPLOY == 'true'
     needs: [build-and-push, release-gate]
     runs-on: ubuntu-latest
     environment: production # required reviewers configured on this Environment

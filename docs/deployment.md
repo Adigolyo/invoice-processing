@@ -192,6 +192,9 @@ keys. Copy the values from `terraform -chdir=infra output`.
      `DRIVE_ROOT_FOLDER_ID` with the sandbox IDs, for the release gate.
    - `production`: **required reviewers**. This is the pipeline's only manual gate. Limit
      deployment branches to `main`.
+   - The production deploy is **switched off** until the repository variable
+     `ENABLE_PRODUCTION_DEPLOY` is `true`. Until then a push on `main` deploys to staging
+     and runs the release gate with no approval step.
 3. Branch protection on `main`: require the `CI` workflow's `lint` and `unit-tests` jobs.
 
 The WIF provider only accepts tokens from `$GITHUB_REPO` workflows running on
@@ -283,8 +286,10 @@ with *Run workflow*:
    "Kibit E2E ledger <run-id>" sheet and "Invoices E2E <run-id>" folder are moved to the
    sandbox Drive trash when it passes, and kept when it fails (`KIBIT_E2E_KEEP=1` keeps
    them always).
-4. **deploy-production**: waits for approval on the `production` Environment, then
-   promotes **the same digest** and runs the same smoke test.
+4. **deploy-production**: only when the repository variable `ENABLE_PRODUCTION_DEPLOY`
+   is `true` (off for now; the job shows as skipped). Waits for approval on the
+   `production` Environment, then promotes **the same digest** and runs the same smoke
+   test.
 
 CI changes only the image. Everything else, including env vars, scaling, IAM, the
 Scheduler and secrets, changes through `terraform apply` from an operator's machine.
