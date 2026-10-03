@@ -279,9 +279,10 @@ with *Run workflow*:
    - `scripts/verify_fixture_answer_key.py --strict --require-run` on the run's results;
    - resumes the staging job if it was enabled before.
 
-   Each release costs a few minutes and ~14 AI Compass calls, and leaves an
-   "Kibit E2E ledger <run-id>" sheet and "Invoices E2E <run-id>" folder in the sandbox
-   Drive.
+   Each release costs a few minutes and ~14 AI Compass calls. The run's
+   "Kibit E2E ledger <run-id>" sheet and "Invoices E2E <run-id>" folder are moved to the
+   sandbox Drive trash when it passes, and kept when it fails (`KIBIT_E2E_KEEP=1` keeps
+   them always).
 4. **deploy-production**: waits for approval on the `production` Environment, then
    promotes **the same digest** and runs the same smoke test.
 

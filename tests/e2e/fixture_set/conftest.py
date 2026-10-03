@@ -25,6 +25,8 @@ Configuration (environment):
   deployed service reads them.
 - ``KIBIT_E2E_REQUIRED=1`` (release gate): whatever would skip the suite fails it.
 - ``KIBIT_E2E_RESULTS_DIR`` (default ``tests/e2e/results``).
+- ``KIBIT_E2E_KEEP=1``: keep the run's ledger and folder even when it passed (by
+  default a passed run's are moved to the Drive trash; a failed run's are kept).
 - ``KIBIT_E2E_PAIRS`` (default ``all``): ``all`` 32 pairs, or ``smoke`` (one pair per
   outcome x currency x month, 7 pairs; used by the release gate).
 - ``KIBIT_E2E_COOLDOWN_S`` (default 90): pause before run 1 and before run 2, so the
@@ -128,13 +130,17 @@ def e2e_env(pytestconfig: pytest.Config) -> LiveEnv:
     return LiveEnv(env, credentials, source)
 
 
+def e2e_ledger_hint(spreadsheet_id: str) -> str:
+    return f"https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit"
+
+
 def _write(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
 
 
 @pytest.fixture(scope="session")
-def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
+def e2e_run(e2e_env: LiveEnv, request: pytest.FixtureRequest) -> Iterator[E2ERun]:
     env, credentials = e2e_env.values, e2e_env.credentials
     started = time.monotonic()
     pairs = verify.load_answer_key(workspace.ANSWER_KEY)
@@ -279,3 +285,10 @@ def e2e_run(e2e_env: LiveEnv) -> Iterator[E2ERun]:
         results_path=results_path,
         timings=timings,
     )
+    # Teardown, after every test of the session: a fully passed run's ledger and folder
+    # are trashed (the results JSON keeps the snapshots); a failed run's are kept.
+    if workspace.should_clean_up(tests_failed=request.session.testsfailed):
+        workspace.trash_run_artifacts(services, spreadsheet_id=spreadsheet_id, folder_id=folder_id)
+        print(f"\nE2E run {run_id} passed: ledger and folder moved to the Drive trash")
+    else:
+        print(f"\nE2E run {run_id}: ledger and folder kept ({e2e_ledger_hint(spreadsheet_id)})")

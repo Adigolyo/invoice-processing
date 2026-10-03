@@ -93,6 +93,26 @@ def retry_rate_limited[T](
     raise AssertionError("unreachable")  # pragma: no cover
 
 
+KEEP_ENV = "KIBIT_E2E_KEEP"
+
+
+def should_clean_up(*, tests_failed: int) -> bool:
+    """Trash a run's ledger and folder only when every test passed and ``KIBIT_E2E_KEEP``
+    is not ``1``. A failed run's artefacts are kept for debugging."""
+    return tests_failed == 0 and os.environ.get(KEEP_ENV) != "1"
+
+
+def trash_run_artifacts(services: Services, *, spreadsheet_id: str, folder_id: str) -> None:
+    """Move the run's ledger and Drive folder (with its month folders) to the trash.
+
+    Trash, not delete: Drive keeps them restorable for 30 days.
+    """
+    for file_id in (spreadsheet_id, folder_id):
+        services.drive.files().update(
+            fileId=file_id, body={"trashed": True}, supportsAllDrives=True
+        ).execute()
+
+
 def credential_source(env: Mapping[str, str], secrets_dir: Path) -> str | None:
     """``"token"`` (local ``token.json``), ``"secret_manager"`` (CI) or ``None``.
 
