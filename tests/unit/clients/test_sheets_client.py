@@ -394,3 +394,32 @@ def test_ledger_row_to_values_formats_due_date() -> None:
 
 def test_module_exports() -> None:
     assert "SheetsClient" in sheets_client.__all__
+
+
+# --- load_registry_numbers -------------------------------------------------------------
+
+
+def test_load_registry_numbers_returns_every_inv_id_int() -> None:
+    fake = FakeSheets(
+        ledger=[
+            HEADER,
+            ["2611_001_DKFT", "D Kft.", "INV/D/2026/03", "direct", "EUR", 1, 1, "2026.12.05"],
+            [" 2611_002_DKFT ", "D Kft."],
+            [],
+            ["", "x"],
+        ]
+    )
+
+    assert fake.client().load_registry_numbers() == {"2611_001_DKFT", "2611_002_DKFT"}
+    assert fake.get_ranges == ["'Ledger'!A1:H"]
+
+
+def test_load_registry_numbers_checks_header_and_fails_loudly() -> None:
+    fake = FakeSheets(ledger=[[HEADER[1], HEADER[0], *HEADER[2:]]])
+    with pytest.raises(LedgerHeaderError):
+        fake.client().load_registry_numbers()
+
+    broken = FakeSheets()
+    broken.get_error = _http_error(500)
+    with pytest.raises(HttpError):
+        broken.client().load_registry_numbers()

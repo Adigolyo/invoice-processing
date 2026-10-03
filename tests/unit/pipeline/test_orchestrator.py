@@ -14,6 +14,7 @@ import httplib2
 import pytest
 from googleapiclient.errors import HttpError
 
+from intake.clients.sheets_client import LedgerRow
 from intake.extraction import DocumentKind, UnsupportedDocumentError
 from intake.models import Candidate, StageResult
 from intake.pipeline.orchestrator import (
@@ -848,3 +849,28 @@ def test_routing_ignores_the_sender_only_the_thread_decides() -> None:
     assert _counts(h.run()) == {"processed": 1}
     assert [r.inv_type for r in h.sheets.rows] == ["direct"]
     assert h.extractor.kinds() == [DocumentKind.INVOICE]
+
+
+def test_a_number_already_in_the_ledger_is_not_reused_when_its_pdf_is_gone() -> None:
+    # 2026-10-03: a booked invoice's PDF was removed from Drive; the next invoice for that
+    # month was given the same INV_ID_int, so the ledger showed it twice.
+    h = Harness()
+    h.sheets.rows.append(
+        LedgerRow(
+            inv_id_int=NUMBER,
+            provider="Other Kft",
+            inv_id_ext="OLD-1",
+            inv_type="direct",
+            currency="HUF",
+            net=Decimal(1),
+            gross=Decimal(1),
+            due_date=date(2026, 11, 4),
+        )
+    )
+    h.direct_invoice()
+
+    summary = h.run()
+
+    assert _counts(summary) == {"processed": 1}
+    assert summary.results[0].registry_number == "2610_002_KOVARIKF"
+    assert [row.inv_id_int for row in h.sheets.rows] == [NUMBER, "2610_002_KOVARIKF"]

@@ -420,3 +420,43 @@ def test_allocator_from_config_start_value_for_new_month() -> None:
 def test_allocator_rejects_invalid_settings(start: int, width: int) -> None:
     with pytest.raises(ValueError):
         SequenceAllocator(FakeMonthFolders(), start=start, width=width)
+
+
+# --- the ledger's numbers are taken too (2026-10-03: 2611_001_DKFT booked twice) --------
+
+
+class FakeLedgerNumbers:
+    def __init__(self, numbers: set[str] | None = None, error: Exception | None = None) -> None:
+        self.numbers = numbers or set()
+        self.error = error
+        self.calls = 0
+
+    def load_registry_numbers(self) -> set[str]:
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        return set(self.numbers)
+
+
+def test_allocator_a_booked_number_whose_pdf_is_gone_is_not_reused() -> None:
+    # The PDF of 2405_001_ACME was removed from Drive, but its ledger row remains.
+    ledger = FakeLedgerNumbers({"2405_001_ACME", "2406_007_OTHER"})
+    allocator = SequenceAllocator(FakeMonthFolders(), start=1, width=3, ledger=ledger)
+
+    assert allocator.allocate(YYMM) == 2
+    assert ledger.calls == 1
+
+
+def test_allocator_takes_the_highest_of_drive_and_ledger() -> None:
+    drive = FakeMonthFolders({YYMM: ["2405_004_ACME.pdf"]})
+    ledger = FakeLedgerNumbers({"2405_002_ACME", "2405009ACME"})  # legacy form counts too
+    assert SequenceAllocator(drive, start=1, width=3, ledger=ledger).allocate(YYMM) == 10
+
+
+def test_allocator_ledger_read_failure_propagates_and_assigns_nothing() -> None:
+    ledger = FakeLedgerNumbers(error=RuntimeError("sheets down"))
+    allocator = SequenceAllocator(FakeMonthFolders(), start=1, width=3, ledger=ledger)
+
+    with pytest.raises(RuntimeError, match="sheets down"):
+        allocator.allocate(YYMM)
+    assert allocator.allocated(YYMM) == frozenset()
