@@ -767,3 +767,74 @@ def test_receipt_without_due_or_performance_date_is_booked_with_the_issue_date()
     assert _counts(h.run()) == {"processed": 1}
     (row,) = h.sheets.rows
     assert row.due_date == date(2026, 9, 23)
+
+
+# --- TIG flow recognised from the thread, whoever replies --------------------------------
+
+MAILBOX = "Invoices <invoice@kibit.example>"
+NON_CONTRACTOR = "Someone <someone@elsewhere.example>"
+
+
+def _reply_to_our_tig(h: Harness, *, tig: StageResult | None = None) -> None:  # type: ignore[type-arg]
+    # The TIG goes out from the invoice mailbox (SENT); the invoice comes back as a reply
+    # from an address that is not on the contractor list.
+    h.gmail.add_message(
+        "tig",
+        thread_id="t1",
+        sender=MAILBOX,
+        subject="TIG küldve",
+        files=[("TIG-2026-10-ZOLD-D.pdf", PDF, TIG_PDF)],
+        labels=("SENT",),
+    )
+    h.gmail.add_message(
+        "inv",
+        thread_id="t1",
+        sender=NON_CONTRACTOR,
+        subject="Re: TIG küldve",
+        files=[("INV_D_2026_04.pdf", PDF, INVOICE_PDF)],
+    )
+    h.extractor.answers[INVOICE_PDF] = ok(invoice_extraction())
+    h.extractor.answers[TIG_PDF] = tig or ok(tig_extraction())
+
+
+def test_reply_to_our_tig_is_reconciled_even_from_a_non_contractor() -> None:
+    h = Harness()
+    _reply_to_our_tig(h, tig=ok(tig_extraction(quantity="8", total="80 000 Ft")))
+
+    assert _counts(h.run()) == {"pending": 1}
+    assert h.gmail.kibit_labels_of("inv") == {LABELS.pending}
+    ((thread_id, _body),) = h.gmail.drafts
+    assert thread_id == "t1"
+    assert [r.inv_type for r in h.sheets.rows] == ["tig"]
+
+
+def test_matching_reply_to_our_tig_is_processed_as_tig() -> None:
+    h = Harness()
+    _reply_to_our_tig(h)
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert h.gmail.drafts == []
+    assert [r.inv_type for r in h.sheets.rows] == ["tig"]
+    assert h.extractor.kinds() == [DocumentKind.INVOICE, DocumentKind.TIG]
+
+
+def test_non_contractor_invoice_without_a_tig_in_its_thread_stays_direct() -> None:
+    h = Harness()
+    h.direct_invoice()
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert [r.inv_type for r in h.sheets.rows] == ["direct"]
+    assert h.extractor.kinds() == [DocumentKind.INVOICE]
+
+
+def test_a_tig_subject_alone_does_not_pull_a_direct_invoice_into_the_tig_flow() -> None:
+    # Only a TIG-named attachment earlier in the thread counts, not a subject word.
+    h = Harness()
+    h.gmail.add_message("note", thread_id="t1", sender=MAILBOX, subject="TIG", labels=("SENT",))
+    h.gmail.add_message(
+        "inv", thread_id="t1", subject="Re: TIG", files=[("szamla.pdf", PDF, INVOICE_PDF)]
+    )
+    h.extractor.answers[INVOICE_PDF] = ok(invoice_extraction())
+
+    assert _counts(h.run()) == {"processed": 1}
+    assert [r.inv_type for r in h.sheets.rows] == ["direct"]
