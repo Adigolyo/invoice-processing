@@ -76,6 +76,10 @@ The service checks this header before every dedupe read and every append. If the
 was reordered, renamed or deleted, it stops instead of writing to the wrong columns.
 Columns after H are not checked.
 
+`INV_ID_int` is the registry number, `YYMM_seq_SUPPLIER` (e.g. `2611_015_JKFT`). The Drive
+file is named the same, plus its extension. Numbers filed before 2026-10-03 have no
+underscores (`2611015JKFT`); they still count when the next sequence number is chosen.
+
 Rows are written with `valueInputOption=RAW`. Text such as external invoice IDs keeps any
 leading zeros. Net and Gross are written as numbers, and the due date as the text
 `YYYY.MM.DD`.

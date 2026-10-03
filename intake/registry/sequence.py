@@ -5,11 +5,13 @@ are already filed in that month's ``YYMM`` folder, read live at derivation time.
 
 Filename pattern
     Filed invoices are named ``{registry_number}.{ext}`` where the registry number is
-    ``[YYMM][seq][SUPPLIER]``: the 4-digit month, ``seq`` zero-padded to exactly
+    ``[YYMM]_[seq]_[SUPPLIER]``: the 4-digit month, ``seq`` zero-padded to exactly
     ``sequence_width`` ASCII digits, and the supplier ID (1-8 characters of ``[A-Z0-9]``,
-    see ``supplier_id.py``). Because ``seq`` has a fixed width it is always the
-    ``width`` digits straight after ``YYMM``; a supplier ID that starts with digits
-    (``3M``, ``7ELEVEN``) can therefore never be mistaken for part of the sequence.
+    see ``supplier_id.py``), separated by underscores (project owner decision,
+    2026-10-03). Numbers filed earlier without separators (``[YYMM][seq][SUPPLIER]``)
+    still parse, so their sequence numbers stay taken; a name mixing the two forms does
+    not. Because ``seq`` has a fixed width, a supplier ID that starts with digits
+    (``3M``, ``7ELEVEN``) can never be mistaken for part of the sequence.
     Only names whose prefix is the folder's own ``YYMM`` count. The extension is
     optional (a bare registry number still marks its sequence as taken), but there may
     be at most one extension segment. Anything else (other documents, Drive copies like
@@ -43,6 +45,8 @@ from intake.config import Config
 from intake.registry.folder_naming import validate_yymm
 from intake.registry.supplier_id import SUPPLIER_ID_LENGTH
 
+REGISTRY_SEPARATOR = "_"
+
 
 class SequenceExhaustedError(ValueError):
     """The next sequence number does not fit the configured ``sequence_width``."""
@@ -73,12 +77,16 @@ def registry_filename_pattern(yymm: str, width: int) -> re.Pattern[str]:
     """Compiled pattern for registry filenames in the ``yymm`` folder (use ``fullmatch``).
 
     Named groups: ``seq`` (exactly ``width`` digits), ``supplier`` and optional ``ext``.
+    Matches ``YYMM_seq_SUPPLIER`` and the legacy ``YYMMseqSUPPLIER``, not a mix.
     """
     validate_yymm(yymm)
     _validate_width(width)
+    sep = re.escape(REGISTRY_SEPARATOR)
     return re.compile(
         rf"{yymm}"
+        rf"(?P<sep>{sep}?)"
         rf"(?P<seq>[0-9]{{{width}}})"
+        r"(?P=sep)"
         rf"(?P<supplier>[A-Z0-9]{{1,{SUPPLIER_ID_LENGTH}}})"
         r"(?:\.(?P<ext>[^./\\\s]+))?"
     )
@@ -177,6 +185,7 @@ class SequenceAllocator:
 __all__ = [
     "MonthFolderLister",
     "SequenceAllocator",
+    "REGISTRY_SEPARATOR",
     "SequenceExhaustedError",
     "existing_sequences",
     "next_sequence",

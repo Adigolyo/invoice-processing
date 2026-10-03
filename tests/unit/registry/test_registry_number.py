@@ -58,7 +58,9 @@ def test_supplier_starting_with_digits_stays_after_the_padded_sequence() -> None
 
 def test_supplier_from_normalize_supplier_is_used_verbatim() -> None:
     assert assemble("2405", 7, normalize_supplier("Kővári Kft"), 3) == "2405_007_KOVARIKF"
-    assert assemble("2405", 8, normalize_supplier("Magyar Telekom Nyrt."), 3) == ("2405_008_TELEKOMN")
+    assert assemble("2405", 8, normalize_supplier("Magyar Telekom Nyrt."), 3) == (
+        "2405_008_TELEKOMN"
+    )
 
 
 # --- AC3: fixed total length ----------------------------------------------------------
@@ -66,7 +68,9 @@ def test_supplier_from_normalize_supplier_is_used_verbatim() -> None:
 
 @pytest.mark.parametrize("width", [1, 2, 3, 4, 6])
 @pytest.mark.parametrize("supplier", ["A", "ACME", "TELEKOM", "ACMECORP"])
-def test_length_is_four_plus_width_plus_supplier_plus_two_separators(width: int, supplier: str) -> None:
+def test_length_is_four_plus_width_plus_supplier_plus_two_separators(
+    width: int, supplier: str
+) -> None:
     number = assemble("2405", 1, supplier, width)
     assert len(number) == 4 + 1 + width + 1 + len(supplier)
 

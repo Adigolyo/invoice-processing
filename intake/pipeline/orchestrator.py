@@ -113,7 +113,11 @@ from intake.registry.filing import (
 )
 from intake.registry.folder_naming import yymm_folder_name
 from intake.registry.registry_number import RegistryNumberError, assemble_for_date
-from intake.registry.sequence import SequenceAllocator, SequenceExhaustedError
+from intake.registry.sequence import (
+    SequenceAllocator,
+    SequenceExhaustedError,
+    registry_filename_pattern,
+)
 from intake.registry.supplier_id import normalize_supplier
 from intake.routing import classify, poll_candidates
 
@@ -581,7 +585,8 @@ class Orchestrator:
 
         if existing is not None:
             number = existing.registry_number
-            if number[:4] != yymm or number[4 + width :] != supplier8:
+            parsed = registry_filename_pattern(yymm, width).fullmatch(number)
+            if parsed is None or parsed.group("supplier") != supplier8:
                 raise _Stop(Outcome.NEEDS_REVIEW, "filed_number_disagrees")
             state.registry_number = number
             return self._row(number, route, extraction, normalised)

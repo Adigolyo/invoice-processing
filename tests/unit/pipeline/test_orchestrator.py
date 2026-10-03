@@ -42,7 +42,7 @@ TIG_PDF = b"%PDF-1.7 tig one"
 PDF = "application/pdf"
 CONTRACTOR = "Kővári Kft <billing@contractor.example>"
 PM = "Project Manager <pm@kibit.example>"
-NUMBER = "2610001KOVARIKF"
+NUMBER = "2610_001_KOVARIKF"
 
 
 def _http_error(status: int = 503) -> HttpError:
@@ -175,7 +175,7 @@ def test_two_invoices_for_the_same_month_in_one_run_get_consecutive_numbers() ->
     )
 
     assert _counts(h.run()) == {"processed": 2}
-    assert h.drive.filenames("2610") == [f"{NUMBER}.pdf", "2610002ACMEZRT.pdf"]
+    assert h.drive.filenames("2610") == [f"{NUMBER}.pdf", "2610_002_ACMEZRT.pdf"]
 
 
 def test_tig_match_is_filed_booked_and_processed_without_a_draft() -> None:

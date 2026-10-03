@@ -40,7 +40,7 @@ from intake.registry.registry_number import assemble
 from intake.registry.sequence import SequenceAllocator
 
 WIDTH = 3
-NUMBER = "2405007ACMECORP"
+NUMBER = "2405_007_ACMECORP"
 PDF_BYTES = b"%PDF-1.7\n\x00\x01\x02 binary \xff\xfe invoice body\n%%EOF"
 
 
@@ -135,15 +135,15 @@ def test_qa_happy_path_saved_into_existing_folder_with_content_unchanged() -> No
     result = _file(drive)
 
     assert result == FiledInvoice(
-        file_id="id-2405007ACMECORP.pdf",
-        filename="2405007ACMECORP.pdf",
+        file_id="id-2405_007_ACMECORP.pdf",
+        filename="2405_007_ACMECORP.pdf",
         folder_id="folder-2405",
         yymm="2405",
         status=FilingStatus.CREATED,
         folder_created=False,
     )
     assert result.created is True
-    assert drive.folders["2405"]["2405007ACMECORP.pdf"] == PDF_BYTES
+    assert drive.folders["2405"]["2405_007_ACMECORP.pdf"] == PDF_BYTES
     assert ("create_month_folder", "2405") not in drive.calls
     assert drive.folders["2405"]["2405001OTHER.pdf"] == b"x"  # neighbours untouched
 
@@ -194,13 +194,13 @@ def test_performance_date_disagreeing_with_prefix_is_refused_before_any_drive_ca
 @pytest.mark.parametrize(
     ("original", "expected"),
     [
-        ("szamla.pdf", "2405007ACMECORP.pdf"),
-        ("scan.jpeg", "2405007ACMECORP.jpeg"),
-        ("photo.PNG", "2405007ACMECORP.PNG"),  # original extension kept verbatim
-        ("Invoice No. 12.2024.pdf", "2405007ACMECORP.pdf"),  # last segment only
-        ("  szamla.pdf  ", "2405007ACMECORP.pdf"),  # surrounding whitespace ignored
-        ("archive.tar.gz", "2405007ACMECORP.gz"),
-        ("Számla – május.pdf", "2405007ACMECORP.pdf"),  # accented stem is irrelevant
+        ("szamla.pdf", "2405_007_ACMECORP.pdf"),
+        ("scan.jpeg", "2405_007_ACMECORP.jpeg"),
+        ("photo.PNG", "2405_007_ACMECORP.PNG"),  # original extension kept verbatim
+        ("Invoice No. 12.2024.pdf", "2405_007_ACMECORP.pdf"),  # last segment only
+        ("  szamla.pdf  ", "2405_007_ACMECORP.pdf"),  # surrounding whitespace ignored
+        ("archive.tar.gz", "2405_007_ACMECORP.gz"),
+        ("Számla – május.pdf", "2405_007_ACMECORP.pdf"),  # accented stem is irrelevant
     ],
 )
 def test_filename_is_registry_number_plus_original_extension(original: str, expected: str) -> None:
@@ -213,20 +213,20 @@ def test_saved_content_is_byte_identical_and_name_is_renamed() -> None:
 
     result = _file(drive, original_filename="kép.JPG", content=content)
 
-    assert result.filename == "2405007ACMECORP.JPG"
-    assert drive.folders["2405"] == {"2405007ACMECORP.JPG": content}
+    assert result.filename == "2405_007_ACMECORP.JPG"
+    assert drive.folders["2405"] == {"2405_007_ACMECORP.JPG": content}
 
 
 def test_mime_type_is_passed_through_to_drive() -> None:
     drive = FakeDrive({"2405": {}})
     _file(drive, mime_type="application/pdf")
-    assert drive.mime_types["2405007ACMECORP.pdf"] == "application/pdf"
+    assert drive.mime_types["2405_007_ACMECORP.pdf"] == "application/pdf"
 
 
 def test_mime_type_defaults_to_none_so_drive_guesses_from_extension() -> None:
     drive = FakeDrive({"2405": {}})
     _file(drive)
-    assert drive.mime_types["2405007ACMECORP.pdf"] is None
+    assert drive.mime_types["2405_007_ACMECORP.pdf"] is None
 
 
 def test_file_attachment_uses_gmail_attachment_name_mime_and_bytes() -> None:
@@ -238,9 +238,9 @@ def test_file_attachment_uses_gmail_attachment_name_mime_and_bytes() -> None:
 
     result = file_attachment(drive, NUMBER, attachment, sequence_width=WIDTH)
 
-    assert result.filename == "2405007ACMECORP.pdf"
-    assert drive.folders["2405"]["2405007ACMECORP.pdf"] == PDF_BYTES
-    assert drive.mime_types["2405007ACMECORP.pdf"] == "application/pdf"
+    assert result.filename == "2405_007_ACMECORP.pdf"
+    assert drive.folders["2405"]["2405_007_ACMECORP.pdf"] == PDF_BYTES
+    assert drive.mime_types["2405_007_ACMECORP.pdf"] == "application/pdf"
 
 
 def test_file_attachment_with_blank_mime_type_lets_drive_guess() -> None:
@@ -249,7 +249,7 @@ def test_file_attachment_with_blank_mime_type_lets_drive_guess() -> None:
         attachment=Attachment(filename="a.pdf", mime_type=""), content=PDF_BYTES
     )
     file_attachment(drive, NUMBER, attachment, sequence_width=WIDTH)
-    assert drive.mime_types["2405007ACMECORP.pdf"] is None
+    assert drive.mime_types["2405_007_ACMECORP.pdf"] is None
 
 
 def test_file_attachment_propagates_performance_date_check() -> None:
@@ -298,7 +298,7 @@ def test_non_bytes_content_is_refused() -> None:
 def test_bytearray_content_is_accepted_unchanged() -> None:
     drive = FakeDrive({"2405": {}})
     _file(drive, content=bytearray(PDF_BYTES))
-    assert drive.folders["2405"]["2405007ACMECORP.pdf"] == PDF_BYTES
+    assert drive.folders["2405"]["2405_007_ACMECORP.pdf"] == PDF_BYTES
 
 
 def test_empty_content_is_refused() -> None:
@@ -346,10 +346,10 @@ def test_filing_error_maps_to_incomplete_stage_result_for_manual_review() -> Non
         "240507ACMECORP",  # sequence shorter than the width
         "2405007",  # no supplier
         "2405007acmecorp",  # lower-case supplier
-        "2405007ACMECORPX",  # supplier longer than 8
+        "2405_007_ACMECORPX",  # supplier longer than 8
         "2405007ACME CORP",
         "2405007ACME/../X",
-        "2405007ACMECORP.pdf",  # already has an extension
+        "2405_007_ACMECORP.pdf",  # already has an extension
         "２４０５007ACMECORP",  # non-ASCII digits
         12345,
     ],
@@ -446,7 +446,7 @@ def test_qa_rerun_after_successful_filing_creates_no_duplicate() -> None:
     assert second.created is False
     assert second.file_id == first.file_id
     assert second.filename == first.filename
-    assert list(drive.folders["2405"]) == ["2405007ACMECORP.pdf"]
+    assert list(drive.folders["2405"]) == ["2405_007_ACMECORP.pdf"]
     assert drive.calls.count(("create_month_folder", "2405")) == 0
 
 
@@ -459,28 +459,28 @@ def test_rerun_after_folder_auto_creation_does_not_create_it_again() -> None:
     assert first.folder_created is True
     assert second.folder_created is False
     assert drive.calls.count(("create_month_folder", "2405")) == 1
-    assert list(drive.folders["2405"]) == ["2405007ACMECORP.pdf"]
+    assert list(drive.folders["2405"]) == ["2405_007_ACMECORP.pdf"]
 
 
 def test_existing_name_never_overwrites_the_filed_content() -> None:
-    drive = FakeDrive({"2405": {"2405007ACMECORP.pdf": b"original"}})
+    drive = FakeDrive({"2405": {"2405_007_ACMECORP.pdf": b"original"}})
 
     result = _file(drive, content=b"something else")
 
     assert result.status is FilingStatus.ALREADY_PRESENT
-    assert drive.folders["2405"]["2405007ACMECORP.pdf"] == b"original"
+    assert drive.folders["2405"]["2405_007_ACMECORP.pdf"] == b"original"
 
 
 def test_require_new_raises_on_existing_name_so_a_collision_is_not_swallowed() -> None:
-    drive = FakeDrive({"2405": {"2405007ACMECORP.pdf": b"another invoice"}})
+    drive = FakeDrive({"2405": {"2405_007_ACMECORP.pdf": b"another invoice"}})
 
     with pytest.raises(FilingConflictError) as excinfo:
         _file(drive, require_new=True)
 
-    assert excinfo.value.filename == "2405007ACMECORP.pdf"
-    assert excinfo.value.file_id == "id-2405007ACMECORP.pdf"
+    assert excinfo.value.filename == "2405_007_ACMECORP.pdf"
+    assert excinfo.value.file_id == "id-2405_007_ACMECORP.pdf"
     assert excinfo.value.folder_id == "folder-2405"
-    assert drive.folders["2405"]["2405007ACMECORP.pdf"] == b"another invoice"
+    assert drive.folders["2405"]["2405_007_ACMECORP.pdf"] == b"another invoice"
 
 
 def test_require_new_succeeds_when_the_name_is_free() -> None:
@@ -490,7 +490,7 @@ def test_require_new_succeeds_when_the_name_is_free() -> None:
 
 def test_same_number_with_other_extension_is_a_separate_name() -> None:
     # Documented limitation: Drive names differ, so filing does not see this as a re-run.
-    drive = FakeDrive({"2405": {"2405007ACMECORP.jpg": b"x"}})
+    drive = FakeDrive({"2405": {"2405_007_ACMECORP.jpg": b"x"}})
     assert _file(drive).status is FilingStatus.CREATED
 
 
@@ -535,7 +535,7 @@ def test_file_invoice_passes_the_source_through_to_drive() -> None:
 
     _file(drive, source_message_id=MSG, source_attachment_key="sha256:abc")
 
-    assert drive.sources["2405007ACMECORP.pdf"] == (MSG, "sha256:abc")
+    assert drive.sources["2405_007_ACMECORP.pdf"] == (MSG, "sha256:abc")
 
 
 def test_file_invoice_without_source_works_with_a_drive_lacking_the_new_kwargs() -> None:
@@ -550,7 +550,7 @@ def test_file_attachment_links_message_id_and_content_key() -> None:
 
     file_attachment(drive, NUMBER, attachment, sequence_width=WIDTH, source_message_id=MSG)
 
-    assert drive.sources["2405007ACMECORP.pdf"] == (MSG, attachment_source_key(PDF_BYTES))
+    assert drive.sources["2405_007_ACMECORP.pdf"] == (MSG, attachment_source_key(PDF_BYTES))
 
 
 def test_file_attachment_without_message_id_sets_no_source() -> None:
@@ -558,7 +558,7 @@ def test_file_attachment_without_message_id_sets_no_source() -> None:
 
     file_attachment(drive, NUMBER, _attachment(), sequence_width=WIDTH)
 
-    assert drive.sources["2405007ACMECORP.pdf"] == (None, None)
+    assert drive.sources["2405_007_ACMECORP.pdf"] == (None, None)
 
 
 def test_find_existing_filing_returns_none_when_nothing_is_linked() -> None:
@@ -579,8 +579,8 @@ def test_find_existing_filing_returns_the_registry_number_of_the_one_match() -> 
 
     assert existing == ExistingFiling(
         registry_number=NUMBER,
-        file_id="id-2405007ACMECORP.pdf",
-        filename="2405007ACMECORP.pdf",
+        file_id="id-2405_007_ACMECORP.pdf",
+        filename="2405_007_ACMECORP.pdf",
         folder_id="folder-2405",
         yymm="2405",
     )

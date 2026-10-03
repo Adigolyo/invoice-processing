@@ -1,4 +1,7 @@
-"""Registry number assembly: ``[YYMM][seq][SUPPLIER8]`` (USR-003-01).
+"""Registry number assembly: ``[YYMM]_[seq]_[SUPPLIER8]`` (USR-003-01).
+
+The three components are joined with underscores, e.g. ``2611_015_JKFT`` (project owner
+decision, 2026-10-03; USR-003-01 has them concatenated).
 
 ``assemble`` is pure string assembly of three components that other stories derive:
 
@@ -8,8 +11,8 @@
   digits (``Config.sequence_width``).
 - ``SUPPLIER8``: the supplier identifier from ``normalize_supplier`` (USR-003-03), used
   verbatim. It is 1-8 characters of ``[A-Z0-9]``: shorter names are kept in full and are
-  **not** padded (USR-003-03 AC6), so the total length is ``4 + width + len(supplier8)``,
-  i.e. ``4 + width + 8`` for every supplier ID of full length.
+  **not** padded (USR-003-03 AC6), so the total length is
+  ``4 + 1 + width + 1 + len(supplier8)``.
 
 Nothing is ever guessed or repaired: a missing (``None``) or invalid component raises
 ``RegistryNumberError`` and no partial number is produced (AC2). The orchestrator turns the
@@ -29,7 +32,7 @@ from typing import Final
 
 from intake.models import FlagReason, StageResult
 from intake.registry.folder_naming import validate_yymm, yymm_folder_name
-from intake.registry.sequence import registry_filename_pattern
+from intake.registry.sequence import REGISTRY_SEPARATOR, registry_filename_pattern
 from intake.registry.supplier_id import SUPPLIER_ID_LENGTH
 
 YYMM_LENGTH: Final = 4
@@ -94,7 +97,7 @@ def _check_supplier(supplier8: object) -> str:
 
 
 def assemble(yymm: str | None, seq: int | None, supplier8: str | None, width: int) -> str:
-    """Return the registry number ``[YYMM][seq zero-padded to width][SUPPLIER8]``.
+    """Return the registry number ``[YYMM]_[seq zero-padded to width]_[SUPPLIER8]``.
 
     Raises:
         RegistryNumberError: if any component is missing (``None``) or invalid: a
@@ -107,11 +110,12 @@ def assemble(yymm: str | None, seq: int | None, supplier8: str | None, width: in
     checked_seq = _check_seq(seq, checked_width)
     checked_supplier = _check_supplier(supplier8)
 
-    number = f"{checked_yymm}{checked_seq:0{checked_width}d}{checked_supplier}"
+    sep = REGISTRY_SEPARATOR
+    number = f"{checked_yymm}{sep}{checked_seq:0{checked_width}d}{sep}{checked_supplier}"
 
     # Defensive invariants (AC3 and round-trip with sequence derivation); unreachable
     # given the checks above, so a failure here is a programming error.
-    expected_length = YYMM_LENGTH + checked_width + len(checked_supplier)
+    expected_length = YYMM_LENGTH + 2 * len(sep) + checked_width + len(checked_supplier)
     match = registry_filename_pattern(checked_yymm, checked_width).fullmatch(number)
     if (
         len(number) != expected_length

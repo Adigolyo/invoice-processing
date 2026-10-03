@@ -151,18 +151,18 @@ def test_fixture_pairs_end_in_their_documented_states() -> None:
 
     # Drive: one renamed copy each, in the performance month's folder, in run order.
     assert drive.filenames("2610") == [
-        "2610001AKFT.pdf",
-        "2610002BKFT.pdf",
-        "2610003CKFT.pdf",
+        "2610_001_AKFT.pdf",
+        "2610_002_BKFT.pdf",
+        "2610_003_CKFT.pdf",
     ]
 
     # Ledger rows match the answer key's expected ledger values.
     rows = {row.inv_id_ext: row for row in sheets.rows}
     assert len(sheets.rows) == 3
     for pair_id, number, inv_type in (
-        (DIRECT, "2610001AKFT", "direct"),
-        (MATCH, "2610002BKFT", "tig"),
-        (MISMATCH, "2610003CKFT", "tig"),
+        (DIRECT, "2610_001_AKFT", "direct"),
+        (MATCH, "2610_002_BKFT", "tig"),
+        (MISMATCH, "2610_003_CKFT", "tig"),
     ):
         expected = PAIRS[pair_id]["invoice"]["expected_ledger"]
         row = rows[expected["inv_id_ext"]]

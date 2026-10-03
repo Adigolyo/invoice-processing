@@ -304,11 +304,11 @@ def _ledger_problems(row: Sequence[Any], p: PairExpectation) -> list[str]:
 
 
 def _registry_problem(registry: str, p: PairExpectation) -> str | None:
-    pattern = rf"{re.escape(p.yymm)}\d{{{SEQUENCE_WIDTH}}}{re.escape(p.supplier8)}"
+    pattern = rf"{re.escape(p.yymm)}_\d{{{SEQUENCE_WIDTH}}}_{re.escape(p.supplier8)}"
     if re.fullmatch(pattern, registry):
         return None
     return (
-        f"registry number {registry!r} is not {p.yymm} + {SEQUENCE_WIDTH}-digit seq + {p.supplier8}"
+        f"registry number {registry!r} is not {p.yymm}_<{SEQUENCE_WIDTH}-digit seq>_{p.supplier8}"
     )
 
 
@@ -450,7 +450,7 @@ def month_sequence_problems(registry_numbers: Iterable[str]) -> list[str]:
     by_month: dict[str, list[int]] = defaultdict(list)
     problems: list[str] = []
     for number in registry_numbers:
-        match = re.fullmatch(rf"(\d{{4}})(\d{{{SEQUENCE_WIDTH}}})[A-Z0-9]{{1,8}}", number)
+        match = re.fullmatch(rf"(\d{{4}})_(\d{{{SEQUENCE_WIDTH}}})_[A-Z0-9]{{1,8}}", number)
         if match is None:
             problems.append(f"malformed registry number {number!r}")
             continue
